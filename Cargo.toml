@@ -1,0 +1,53 @@
+[package]
+name = "crypto2"
+version = "0.1.0"
+authors = ["luozijun <luozijun.assistant@gmail.com>"]
+edition = "2018"
+license = "MIT"
+keywords      = [ "Cryptography" ]
+description   = "cryptographic algorithms"
+repository    = "https://github.com/shadowsocks/crypto2"
+documentation = "https://docs.rs/crypto2"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+
+[dev-dependencies]
+hex = "0.4"
+
+[features]
+default = [
+    "std",
+    "openssh",
+]
+
+std     = [ ]
+nightly = [ ]
+openssh = [ ]
+
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+# https://doc.rust-lang.org/cargo/reference/profiles.html#release
+[profile.release]
+opt-level = 3               # Use slightly better optimizations.
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = "fat"
+panic = 'unwind'
+incremental = false
+codegen-units = 1
+
+[profile.bench]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = "fat"
+incremental = false
+codegen-units = 1
+rpath = false

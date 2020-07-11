@@ -1,0 +1,15 @@
+arch:
+  - arm64
+os: linux
+dist: bionic
+language: rust
+cache: cargo
+rust:
+  - nightly
+matrix:
+  fast_finish: false
+  script:
+    run:
+      - cargo build --verbose
+      - cargo test --verbose
+      - cargo doc --verbose
