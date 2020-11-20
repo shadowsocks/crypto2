@@ -13,16 +13,16 @@ use core::mem::transmute;
 #[inline]
 unsafe fn pmull(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
     // Low
-    let a: poly64_t = transmute(vgetq_lane_u64(vreinterpretq_u64_u8(a), 0));
-    let b: poly64_t = transmute(vgetq_lane_u64(vreinterpretq_u64_u8(b), 0));
+    let a = vgetq_lane_u64(vreinterpretq_u64_u8(a), 0);
+    let b = vgetq_lane_u64(vreinterpretq_u64_u8(b), 0);
     transmute(vmull_p64(a, b))
 }
 
 #[inline]
 unsafe fn pmull2(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
     // High
-    let a: poly64_t = transmute(vgetq_lane_u64(vreinterpretq_u64_u8(a), 1));
-    let b: poly64_t = transmute(vgetq_lane_u64(vreinterpretq_u64_u8(b), 1));
+    let a = vgetq_lane_u64(vreinterpretq_u64_u8(a), 1);
+    let b = vgetq_lane_u64(vreinterpretq_u64_u8(b), 1);
     transmute(vmull_p64(a, b))
 }
 

@@ -11,26 +11,22 @@ unsafe fn _mm_clmulepi64_si128(a: uint8x16_t, b: uint8x16_t, imm8: u8) -> uint8x
         0x00 => {
             let a: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(a), 0);
             let b: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(b), 0);
-            let ret: poly128_t = vmull_p64(transmute(a), transmute(b));
-            transmute(ret)
+            transmute(vmull_p64(a, b))
         },
         0x11 => {
             let a: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(a), 1);
             let b: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(b), 1);
-            let ret: poly128_t = vmull_p64(transmute(a), transmute(b));
-            transmute(ret)
+            transmute(vmull_p64(a, b))
         },
         0x10 => {
             let a: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(a), 0);
             let b: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(b), 1);
-            let ret: poly128_t = vmull_p64(transmute(a), transmute(b));
-            transmute(ret)
+            transmute(vmull_p64(a, b))
         },
         0x01 => {
             let a: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(a), 1);
             let b: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(b), 0);
-            let ret: poly128_t = vmull_p64(transmute(a), transmute(b));
-            transmute(ret)
+            transmute(vmull_p64(a, b))
         },
         _ => unreachable!()
     }
