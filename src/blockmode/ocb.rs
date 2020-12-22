@@ -37,11 +37,12 @@ macro_rules! impl_block_cipher_with_ocb_mode {
             pub const KEY_LEN: usize   = $cipher::KEY_LEN;
             pub const BLOCK_LEN: usize = $cipher::BLOCK_LEN;
             pub const TAG_LEN: usize   = $tlen;
-
+            
             // P_MAX, A_MAX, and C_MAX are all unbounded
             pub const A_MAX: usize = usize::MAX;
             pub const P_MAX: usize = usize::MAX - Self::TAG_LEN;
-            pub const C_MAX: usize = usize::MAX; // 2^36 + 16
+            pub const C_MAX: usize = usize::MAX;
+
             pub const N_MIN: usize =  1;
             pub const N_MAX: usize = 15;
 
@@ -410,7 +411,7 @@ A5DDBFC5787E50B5CC55EE507BCB084E479AD363AC366B95\
 A98CA5F3000B1479").unwrap();
     let ret = cipher.decrypt_slice(&nonce, &aad, &mut ciphertext_and_tag);
     assert_eq!(ret, true);
-    assert_eq!(&ciphertext_and_tag[..plen], &plaintext);
+    assert_eq!(&ciphertext_and_tag[..plen], &plaintext[..]);
 }
 
 #[test]

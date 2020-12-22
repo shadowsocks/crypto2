@@ -44,9 +44,21 @@ macro_rules! impl_block_cipher_with_gcm_siv_mode {
             pub const NONCE_LEN: usize = 12;
             pub const TAG_LEN: usize   = 16;
             
-            pub const A_MAX: usize = 68719476736;                 // 2^36
-            pub const P_MAX: usize = 68719476736;                 // 2^36
+            #[cfg(target_pointer_width = "64")]
+            pub const A_MAX: usize = 68719476736;                  // 2^36
+            #[cfg(target_pointer_width = "32")]
+            pub const A_MAX: usize = usize::MAX;                   // 2^36
+
+            #[cfg(target_pointer_width = "64")]
+            pub const P_MAX: usize = 68719476736;                  // 2^36
+            #[cfg(target_pointer_width = "32")]
+            pub const P_MAX: usize = usize::MAX -  Self::TAG_LEN;  // 2^36
+
+            #[cfg(target_pointer_width = "64")]
             pub const C_MAX: usize = 68719476736 + Self::TAG_LEN; // 2^36 + 16
+            #[cfg(target_pointer_width = "32")]
+            pub const C_MAX: usize = usize::MAX;                  // 2^36 + 16
+
             pub const N_MIN: usize = Self::NONCE_LEN;
             pub const N_MAX: usize = Self::NONCE_LEN;
 

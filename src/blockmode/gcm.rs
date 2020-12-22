@@ -54,10 +54,22 @@ macro_rules! impl_block_cipher_with_gcm_mode {
             //       这样和 BlockCounter (u32) 合在一起 组成一个 Nonce，为 12 + 4 = 16 Bytes。
             pub const NONCE_LEN: usize = 12;
             pub const TAG_LEN: usize   = $tlen;
+            
+            #[cfg(target_pointer_width = "64")]
+            pub const A_MAX: usize = 2305843009213693951; // 2 ** 61 - 1
+            #[cfg(target_pointer_width = "32")]
+            pub const A_MAX: usize = usize::MAX;          // 2 ** 32 - 1
 
-            pub const A_MAX: usize = 2305843009213693951; // 2 ** 61
-            pub const P_MAX: usize = 68719476735;         // 2^36 - 31
+            #[cfg(target_pointer_width = "64")]
+            pub const P_MAX: usize = 68719476735;                // 2^36 - 31
+            #[cfg(target_pointer_width = "32")]
+            pub const P_MAX: usize = usize::MAX - Self::TAG_LEN; // 2^36 - 31
+            
+            #[cfg(target_pointer_width = "64")]
             pub const C_MAX: usize = 68719476721;         // 2^36 - 15
+            #[cfg(target_pointer_width = "32")]
+            pub const C_MAX: usize = usize::MAX;          // 2^36 - 15
+
             pub const N_MIN: usize = Self::NONCE_LEN;
             pub const N_MAX: usize = Self::NONCE_LEN;
 

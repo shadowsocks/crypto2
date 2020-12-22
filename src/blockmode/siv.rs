@@ -44,16 +44,16 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
                 self.zeroize();
             }
         }
-
+        
         impl $name {
             pub const KEY_LEN: usize   = $cipher::KEY_LEN * 2; // 16 Byte Cipher Key, 16 Byte CMac Key
             pub const BLOCK_LEN: usize = $cipher::BLOCK_LEN;
             pub const TAG_LEN: usize   = 16;
             
-            pub const A_MAX: usize = usize::MAX; // NOTE: 实际上是 unlimited
-            // NOTE: 实际上是 2 ^ 132，但是这超出了 u64 的最大值。
-            pub const P_MAX: usize = usize::MAX - 16;
-            pub const C_MAX: usize = usize::MAX;
+            pub const A_MAX: usize = usize::MAX;      // unlimited
+            pub const P_MAX: usize = usize::MAX - 16; // 2 ^ 132
+            pub const C_MAX: usize = usize::MAX;      // 2 ^ 132 + TAG_LEN
+            
             pub const N_MIN: usize = 1;
             pub const N_MAX: usize = usize::MAX;
 
