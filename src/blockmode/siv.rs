@@ -108,7 +108,7 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
                 // https://tools.ietf.org/html/rfc4493#section-2.4
                 if cfg!(debug_assertions) {
                     if last_block.is_some() {
-                        assert!(m.len() >= Self::BLOCK_LEN);
+                        assert!(m.len() > 0);
                     }
                 }
                 let mlen = if last_block.is_some() { m.len() + Self::BLOCK_LEN } else { m.len() };
@@ -406,7 +406,6 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
 
                 // T = S2V(K1, AD1, ..., ADn, P)
                 let tag = self.s2v(components, &ciphertext_in_plaintext_out, opts);
-                
                 // Verify
                 constant_time_eq(tag_in, &tag[..Self::TAG_LEN])
             }
