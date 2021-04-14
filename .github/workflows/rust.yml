@@ -27,7 +27,7 @@ jobs:
         components: clippy
         override: true
     - name: Check
-      run: cargo clippy -- -W clippy::all -Z macro-backtrace
+      run: cargo clippy -- -W clippy::all -Z macro-backtrace --verbose
     - name: Build
       run: cargo build --verbose
     - name: Test
