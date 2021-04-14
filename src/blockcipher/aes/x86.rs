@@ -13,8 +13,7 @@ macro_rules! aes128_keyround {
             let mut gen = _mm_aeskeygenassist_si128(key, $rcon);
             gen = _mm_shuffle_epi32(gen, 255);
             key = _mm_xor_si128(key, _mm_slli_si128(key, 4));
-            key = _mm_xor_si128(key, _mm_slli_si128(key, 4));
-            key = _mm_xor_si128(key, _mm_slli_si128(key, 4));
+            key = _mm_xor_si128(key, _mm_slli_si128(key, 8));
             $ek[$i] = _mm_xor_si128(key, gen);
         }
     }
