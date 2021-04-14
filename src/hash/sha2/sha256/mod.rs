@@ -1,7 +1,7 @@
 // FIPS-180-2 compliant SHA-256 implementation
-// 
+//
 // The SHA-256 Secure Hash Standard was published by NIST in 2002.
-// http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf
+// <http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf>
 use core::convert::TryFrom;
 
 
@@ -86,7 +86,7 @@ fn transform(state: &mut [u32; 8], block: &[u8]) {
 
 /// A 224-bit One-way Hash Function: SHA-224
 /// 
-/// https://tools.ietf.org/html/rfc3874
+/// <https://tools.ietf.org/html/rfc3874>
 #[derive(Clone)]
 pub struct Sha224 {
     inner: Sha256,

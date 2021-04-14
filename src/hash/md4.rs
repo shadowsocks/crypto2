@@ -1,5 +1,5 @@
 // The MD4 Message-Digest Algorithm
-// https://tools.ietf.org/html/rfc1320
+// <https://tools.ietf.org/html/rfc1320>
 use core::convert::TryFrom;
 
 
@@ -216,7 +216,7 @@ fn transform(state: &mut [u32; 4], block: &[u8]) {
 #[test]
 fn test_md4() {
     // A.5 Test suite
-    // https://tools.ietf.org/html/rfc1320#appendix-A.5
+    // <https://tools.ietf.org/html/rfc1320#appendix-A.5>
     assert_eq!(&md4(""),
         &hex::decode("31d6cfe0d16ae931b73c59d7e0c089c0").unwrap()[..]);
     assert_eq!(&md4("a"),
