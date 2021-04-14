@@ -8,7 +8,7 @@ use self::chacha20::Chacha20;
 
 /// ChaCha20 and Poly1305 for OpenSSH Protocols (chacha20-poly1305@openssh.com)
 /// 
-/// https://github.com/openbsd/src/blob/master/usr.bin/ssh/PROTOCOL.chacha20poly1305
+/// <https://github.com/openbsd/src/blob/master/usr.bin/ssh/PROTOCOL.chacha20poly1305>
 #[derive(Clone)]
 pub struct Chacha20Poly1305 {
     c1: Chacha20,

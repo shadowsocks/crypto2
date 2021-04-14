@@ -32,7 +32,7 @@ fn v512_i8_xor_inplace(a: &mut [u8], b: &[u8]) {
 
 /// ChaCha20 for IETF Protocols
 /// 
-/// https://tools.ietf.org/html/rfc8439
+/// <https://tools.ietf.org/html/rfc8439>
 #[derive(Clone)]
 pub struct Chacha20 {
     initial_state: [u32; 16],

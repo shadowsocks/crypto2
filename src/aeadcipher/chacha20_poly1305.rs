@@ -6,7 +6,7 @@ use crate::streamcipher::Chacha20;
 
 /// ChaCha20 and Poly1305 for IETF Protocols
 /// 
-/// https://tools.ietf.org/html/rfc8439
+/// <https://tools.ietf.org/html/rfc8439>
 #[derive(Clone)]
 pub struct Chacha20Poly1305 {
     chacha20: Chacha20,
