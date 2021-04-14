@@ -7,6 +7,9 @@ mod sha2;
 // TODO: 暂未实现
 mod sha3;
 
+#[cfg(test)]
+mod random_split_test;
+
 pub use self::md2::*;
 pub use self::md4::*;
 pub use self::md5::*;

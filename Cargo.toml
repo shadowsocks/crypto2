@@ -15,6 +15,7 @@ documentation = "https://docs.rs/crypto2"
 
 [dev-dependencies]
 hex = "0.4"
+rand = "0.8"
 
 [features]
 default = [
