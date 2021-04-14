@@ -448,3 +448,22 @@ fn test_md5_long_message() {
     let digest = [119, 7, 214, 174, 78, 2, 124, 112, 238, 162, 169, 53, 194, 41, 111, 33];
     assert_eq!(Md5::oneshot(&msg), digest);
 }
+
+#[test]
+fn test_md5_consistency() {
+    let magic_a = hex::decode("4b01a2d762fada9ede4d1034a13dc69c").unwrap();
+    let magic_b = hex::decode("496d616b65746869735f4c6f6e6750617373506872617365466f725f7361666574795f323031395f30393238405f4021").unwrap();
+    println!("A = {:?}, B = {:?}", magic_a, magic_b);
+
+    let mut m1 = Md5::new();
+    m1.update(&magic_a);
+    m1.update(&magic_b);
+    let h1 = m1.finalize();
+
+    let mut magic_ab = magic_a.clone();
+    magic_ab.extend(&magic_b);
+    println!("AB = {:?}", magic_ab);
+    let h2 = Md5::oneshot(magic_ab);
+
+    assert_eq!(h1, h2);
+}
