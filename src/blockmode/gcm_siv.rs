@@ -17,7 +17,7 @@ use crate::blockcipher::{
 
 const GCM_SIV_BLOCK_LEN: usize = 16;
 
-            
+/// FIXME: rewrite derive_keys() implementation to dismiss the warning.
 macro_rules! impl_block_cipher_with_gcm_siv_mode {
     ($name:tt, $cipher:tt) => {
 
@@ -77,6 +77,7 @@ macro_rules! impl_block_cipher_with_gcm_siv_mode {
             }
             
             #[inline]
+            #[allow(clippy::out_of_bounds_indexing)]
             fn derive_keys(&self, nonce: &[u8]) -> ($cipher, Polyval) {
                 let mut counter_block = [0u8; Self::BLOCK_LEN];
                 counter_block[4..16].copy_from_slice(nonce);
