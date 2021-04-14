@@ -26,11 +26,11 @@ jobs:
         toolchain: nightly
         components: clippy
         override: true
+    - name: Check
+      run: cargo clippy -- -W clippy::all -Z macro-backtrace
     - name: Build
       run: cargo build --verbose
-    - name: Run tests
+    - name: Test
       run: cargo test --verbose
-    - name: Build
-      run: cargo build --verbose
-    - name: Build docs
+    - name: Docs
       run: cargo doc --verbose
