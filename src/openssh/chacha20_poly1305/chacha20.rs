@@ -169,7 +169,7 @@ impl Chacha20 {
 #[inline]
 fn quarter_round(state: &mut [u32], ai: usize, bi: usize, ci: usize, di: usize) {
     // n <<<= m
-    // 等介于: (n << m) ^ (n >> (32 - 8))
+    // 等价于: (n << m) ^ (n >> (32 - 8))
 
     // a += b; d ^= a; d <<<= 16;
     // c += d; b ^= c; b <<<= 12;
