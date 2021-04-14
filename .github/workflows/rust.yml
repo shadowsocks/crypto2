@@ -10,42 +10,15 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        components: clippy
-        override: true
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-    - name: Build
-      run: cargo build --verbose
-    - name: Build docs
-      run: cargo doc --verbose
-  windows:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        components: clippy
-        override: true
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-    - name: Build
-      run: cargo build --verbose
-    - name: Build docs
-      run: cargo doc --verbose
-  macos:
-    runs-on: macos-latest
+  build-and-check:
+    name: Build and Check
+    strategy:
+      matrix:
+        platform:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+    runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
