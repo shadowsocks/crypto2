@@ -86,7 +86,7 @@ fn transform(state: &mut [u32; 8], block: &[u8]) {
 
 /// A 224-bit One-way Hash Function: SHA-224
 /// 
-/// https://tools.ietf.org/html/rfc3874
+/// <https://tools.ietf.org/html/rfc3874>
 #[derive(Clone)]
 pub struct Sha224 {
     inner: Sha256,
