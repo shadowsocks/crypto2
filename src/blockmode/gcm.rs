@@ -42,9 +42,9 @@ macro_rules! impl_block_cipher_with_gcm_mode {
             pub const TAG_LEN: usize   = $tlen;
             
             #[cfg(target_pointer_width = "64")]
-            pub const A_MAX: usize = 2305843009213693951; // 2 ** 61 - 1
+            pub const A_MAX: usize = 2305843009213693951; // 2^61 - 1
             #[cfg(target_pointer_width = "32")]
-            pub const A_MAX: usize = usize::MAX;          // 2 ** 32 - 1
+            pub const A_MAX: usize = usize::MAX;          // 2^32 - 1
 
             #[cfg(target_pointer_width = "64")]
             pub const P_MAX: usize = 68719476735;                // 2^36 - 31

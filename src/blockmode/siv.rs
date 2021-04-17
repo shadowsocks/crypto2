@@ -45,8 +45,8 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
             pub const TAG_LEN: usize   = 16;
             
             pub const A_MAX: usize = usize::MAX;      // unlimited
-            pub const P_MAX: usize = usize::MAX - 16; // 2 ^ 132
-            pub const C_MAX: usize = usize::MAX;      // 2 ^ 132 + TAG_LEN
+            pub const P_MAX: usize = usize::MAX - 16; // 2^132
+            pub const C_MAX: usize = usize::MAX;      // 2^132 + TAG_LEN
             
             pub const N_MIN: usize = 1;
             pub const N_MAX: usize = usize::MAX;
