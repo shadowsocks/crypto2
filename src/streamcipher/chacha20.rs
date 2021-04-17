@@ -136,9 +136,6 @@ impl Chacha20 {
             // 20 rounds (diagonal rounds)
             diagonal_rounds(&mut state);
             add_si512_inplace(&mut state, &mut initial_state);
-
-            // Update Block Counter
-            // initial_state[12] = initial_state[12].wrapping_add(1);
             
             if cfg!(target_endian = "little") {
                 unsafe {
