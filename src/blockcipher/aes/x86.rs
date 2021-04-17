@@ -1,5 +1,3 @@
-use crate::mem::Zeroize;
-
 #[cfg(target_arch = "x86")]
 use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
@@ -25,18 +23,6 @@ pub struct Aes128 {
     ek: [__m128i; 20],
 }
 
-impl Zeroize for Aes128 {
-    fn zeroize(&mut self) {
-        unsafe {
-            self.ek = [_mm_setzero_si128(); 20];
-        }
-    }
-}
-impl Drop for Aes128 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
 impl core::fmt::Debug for Aes128 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Aes128").finish()
@@ -146,18 +132,6 @@ pub struct Aes192 {
     ek: [__m128i; 24],
 }
 
-impl Zeroize for Aes192 {
-    fn zeroize(&mut self) {
-        unsafe {
-            self.ek = [_mm_setzero_si128(); 24];
-        }
-    }
-}
-impl Drop for Aes192 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
 impl core::fmt::Debug for Aes192 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Aes192").finish()
@@ -323,19 +297,6 @@ macro_rules! aes256_keyround_2 {
 #[derive(Clone)]
 pub struct Aes256 {
     ek: [__m128i; 28],
-}
-
-impl Zeroize for Aes256 {
-    fn zeroize(&mut self) {
-        unsafe {
-            self.ek = [_mm_setzero_si128(); 28];
-        }
-    }
-}
-impl Drop for Aes256 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl core::fmt::Debug for Aes256 {

@@ -1,6 +1,5 @@
 // 6.5 The Counter Mode, (Page-22)
 // https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38a.pdf
-use crate::mem::Zeroize;
 use crate::blockcipher::{
     Sm4,
     Aes128, Aes192, Aes256,
@@ -19,18 +18,6 @@ macro_rules! impl_block_cipher_with_ctr_mode {
         #[derive(Clone)]
         pub struct $name {
             cipher: $cipher,
-        }
-
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
         }
         
         impl $name {

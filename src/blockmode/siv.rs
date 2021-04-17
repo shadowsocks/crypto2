@@ -11,7 +11,6 @@
 // Block Cipher Techniques
 // https://csrc.nist.gov/projects/block-cipher-techniques/bcm/modes-development
 use super::dbl;
-use crate::mem::Zeroize;
 use crate::mem::constant_time_eq;
 use crate::util::xor_si128_inplace;
 use crate::util::and_si128_inplace;
@@ -38,21 +37,6 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
             cmac_cipher: $cipher,
             cmac_k1: [u8; Self::BLOCK_LEN],
             cmac_k2: [u8; Self::BLOCK_LEN],
-        }
-
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-                self.cmac_cipher.zeroize();
-                self.cmac_k1.zeroize();
-                self.cmac_k2.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
         }
         
         impl $name {

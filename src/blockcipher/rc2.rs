@@ -12,9 +12,6 @@
 //     RC4 is a stream cipher.
 //     RC5 is a 32/64/128-bit block cipher developed in 1994.
 //     RC6, a 128-bit block cipher based heavily on RC5, was an AES finalist developed in 1997.
-use crate::mem::Zeroize;
-
-
 const PI_TABLE: [u8; 256] = [
     0xd9, 0x78, 0xf9, 0xc4, 0x19, 0xdd, 0xb5, 0xed, 
     0x28, 0xe9, 0xfd, 0x79, 0x4a, 0xa0, 0xd8, 0x9d, 
@@ -170,18 +167,6 @@ pub struct Rc2FixedSize {
     inner: Rc2,
 }
 
-impl Zeroize for Rc2FixedSize {
-    fn zeroize(&mut self) {
-        self.inner.zeroize();
-    }
-}
-
-impl Drop for Rc2FixedSize {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
-
 impl core::fmt::Debug for Rc2FixedSize {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Rc2FixedSize").finish()
@@ -222,18 +207,6 @@ impl Rc2FixedSize {
 #[derive(Clone)]
 pub struct Rc2 {
     ek: [u16; 64],
-}
-
-impl Zeroize for Rc2 {
-    fn zeroize(&mut self) {
-        self.ek.zeroize();
-    }
-}
-
-impl Drop for Rc2 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl core::fmt::Debug for Rc2 {

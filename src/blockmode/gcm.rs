@@ -3,7 +3,6 @@
 // 
 // Galois/Counter Mode:
 // https://en.wikipedia.org/wiki/Galois/Counter_Mode
-use crate::mem::Zeroize;
 use crate::mem::constant_time_eq;
 use crate::util::xor_si128_inplace;
 use crate::mac::GHash;
@@ -30,19 +29,6 @@ macro_rules! impl_block_cipher_with_gcm_mode {
         pub struct $name {
             cipher: $cipher,
             ghash: GHash,
-        }
-
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-                self.ghash.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
         }
 
         // 6.  AES GCM Algorithms for Secure Shell

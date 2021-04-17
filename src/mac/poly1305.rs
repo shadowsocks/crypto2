@@ -14,7 +14,6 @@
 // 参考 bigint: 
 //      https://github.com/sorpaas/etcommon-rs/blob/master/bigint/src/uint/mod.rs
 // 
-use crate::mem::Zeroize;
 
 
 // 2.5.1.  The Poly1305 Algorithms in Pseudocode
@@ -24,20 +23,6 @@ pub struct Poly1305 {
     r        : [u32; 5], // r: le_bytes_to_num(key[0..15])
     h        : [u32; 5],
     pad      : [u32; 4], // s: le_bytes_to_num(key[16..31])
-}
-
-impl Zeroize for Poly1305 {
-    fn zeroize(&mut self) {
-        self.r.zeroize();
-        self.h.zeroize();
-        self.pad.zeroize();
-    }
-}
-
-impl Drop for Poly1305 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl core::fmt::Debug for Poly1305 {

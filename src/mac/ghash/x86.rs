@@ -1,5 +1,3 @@
-use crate::mem::Zeroize;
-
 #[cfg(target_arch = "x86")]
 use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
@@ -12,21 +10,6 @@ use core::arch::x86_64::*;
 pub struct GHash {
     key: __m128i,
     buf: __m128i,
-}
-
-impl Zeroize for GHash {
-    fn zeroize(&mut self) {
-        unsafe {
-            self.key = _mm_setzero_si128();
-            self.buf = _mm_setzero_si128();
-        }
-    }
-}
-
-impl Drop for GHash {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl GHash {

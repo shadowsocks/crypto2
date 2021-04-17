@@ -1,22 +1,7 @@
-use crate::mem::Zeroize;
-
-
 /// ChaCha20 for OpenSSH Protocols
 #[derive(Clone)]
 pub struct Chacha20 {
     state: [u32; 16],
-}
-
-impl Zeroize for Chacha20 {
-    fn zeroize(&mut self) {
-        self.state.zeroize();
-    }
-}
-
-impl Drop for Chacha20 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl core::fmt::Debug for Chacha20 {
@@ -155,12 +140,12 @@ impl Chacha20 {
         }
     }
 
-    pub fn encrypt_slice(&mut self, pkt_seq_num: u32, block_counter: u64, plaintext_and_ciphertext: &mut [u8]) {
-        self.in_place(pkt_seq_num, block_counter, plaintext_and_ciphertext)
+    pub fn encrypt_slice(&mut self, pkt_seq_num: u32, block_counter: u64, plaintext_in_ciphertext_out: &mut [u8]) {
+        self.in_place(pkt_seq_num, block_counter, plaintext_in_ciphertext_out)
     }
 
-    pub fn decrypt_slice(&mut self, pkt_seq_num: u32, block_counter: u64, ciphertext_and_plaintext: &mut [u8]) {
-        self.in_place(pkt_seq_num, block_counter, ciphertext_and_plaintext)
+    pub fn decrypt_slice(&mut self, pkt_seq_num: u32, block_counter: u64, ciphertext_out_plaintext_in: &mut [u8]) {
+        self.in_place(pkt_seq_num, block_counter, ciphertext_out_plaintext_in)
     }
 }
 

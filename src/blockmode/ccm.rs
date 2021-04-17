@@ -9,7 +9,6 @@
 // 
 // CBC-MAC
 // Cipher Block Chaining-Message Authentication Code
-use crate::mem::Zeroize;
 use crate::mem::constant_time_eq;
 use crate::util::xor_si128_inplace;
 use crate::blockcipher::{
@@ -25,18 +24,6 @@ macro_rules! impl_block_cipher_with_ccm_mode {
         #[derive(Clone)]
         pub struct $name {
             cipher: $cipher,
-        }
-
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
         }
 
         // 6.  AES GCM Algorithms for Secure Shell

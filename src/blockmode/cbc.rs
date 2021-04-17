@@ -12,7 +12,6 @@
 //      ECB 和 CBC 分组模式都无法处理不定长的输入数据，
 //      需要自己手动为不定长数据按照块密码算法的块大小做对齐工作。
 // 
-use crate::mem::Zeroize;
 use crate::blockcipher::{
     Rc2FixedSize, Sm4,
     Aes128, Aes192, Aes256,
@@ -28,18 +27,6 @@ macro_rules! impl_block_cipher_with_cbc_mode {
             cipher: $cipher,
         }
         
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
-        }
-
         impl $name {
             pub const KEY_LEN: usize   = $cipher::KEY_LEN;
             pub const BLOCK_LEN: usize = $cipher::BLOCK_LEN;

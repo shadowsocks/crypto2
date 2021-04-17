@@ -1,5 +1,3 @@
-use crate::mem::Zeroize;
-
 #[cfg(target_arch = "x86")]
 use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
@@ -19,22 +17,6 @@ pub struct Polyval {
     key: __m128i,
     h: __m128i,
 }
-
-impl Zeroize for Polyval {
-    fn zeroize(&mut self) {
-        unsafe {
-            self.key = _mm_setzero_si128();
-            self.h   = _mm_setzero_si128();
-        }
-    }
-}
-
-impl Drop for Polyval {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
-
 
 impl Polyval {
     pub const KEY_LEN: usize   = 16;

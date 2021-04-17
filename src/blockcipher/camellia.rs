@@ -18,9 +18,6 @@
 // 
 // Speci cationofCamellia|a128-bitBlockCipher
 // https://info.isl.ntt.co.jp/crypt/eng/camellia/dl/01espec.pdf
-use crate::mem::Zeroize;
-
-
 const BLOCK_LEN: usize = 16;
 const CAMELLIA_BLOCK_SIZE: usize = 16;
 const CAMELLIA_TABLE_BYTE_LEN: usize = 272;
@@ -66,48 +63,18 @@ impl_camellia!(Camellia192, 24, camellia_setup192, camellia_encrypt256, camellia
 impl_camellia!(Camellia256, 32, camellia_setup256, camellia_encrypt256, camellia_decrypt256);
 
 
-impl Zeroize for Camellia128 {
-    fn zeroize(&mut self) {
-        self.subkey.zeroize();
-    }
-}
-impl Drop for Camellia128 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
 impl core::fmt::Debug for Camellia128 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Camellia128").finish()
     }
 }
 
-impl Zeroize for Camellia192 {
-    fn zeroize(&mut self) {
-        self.subkey.zeroize();
-    }
-}
-impl Drop for Camellia192 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
 impl core::fmt::Debug for Camellia192 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Camellia192").finish()
     }
 }
 
-impl Zeroize for Camellia256 {
-    fn zeroize(&mut self) {
-        self.subkey.zeroize();
-    }
-}
-impl Drop for Camellia256 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
 impl core::fmt::Debug for Camellia256 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Camellia256").finish()

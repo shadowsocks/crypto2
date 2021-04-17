@@ -22,8 +22,6 @@
 // CFB64 和 分组大小为 8 byte 的对称分组密码结合时（如 RC2），也可以被当作是一个流密码。
 // 
 // CFB128 和 分组大小为 16 byte 的对称分组密码结合时（如 AES/Camellia/Aria），也可以被当作是一个流密码。
-// 
-use crate::mem::Zeroize;
 use crate::blockcipher::{
     Sm4,
     Aes128, Aes192, Aes256,
@@ -80,18 +78,6 @@ macro_rules! impl_block_cipher_with_cfb64_mode {
         #[derive(Clone)]
         pub struct $name {
             cipher: $cipher,
-        }
-
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
         }
 
         impl $name {
@@ -190,18 +176,6 @@ macro_rules! impl_block_cipher_with_cfb1_mode {
             cipher: $cipher,
         }
 
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
-        }
-
         impl $name {
             pub const KEY_LEN: usize   = $cipher::KEY_LEN;
             pub const BLOCK_LEN: usize = $cipher::BLOCK_LEN;
@@ -276,18 +250,6 @@ macro_rules! impl_block_cipher_with_cfb8_mode {
             cipher: $cipher,
         }
 
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
-        }
-
         impl $name {
             pub const KEY_LEN: usize   = $cipher::KEY_LEN;
             pub const BLOCK_LEN: usize = $cipher::BLOCK_LEN;
@@ -357,18 +319,6 @@ macro_rules! impl_block_cipher_with_cfb128_mode {
         #[derive(Clone)]
         pub struct $name {
             cipher: $cipher,
-        }
-
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
         }
 
         impl $name {

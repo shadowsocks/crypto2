@@ -9,9 +9,6 @@
 //            draft-ribose-cfrg-sm4-10
 // 
 // https://tools.ietf.org/html/draft-ribose-cfrg-sm4-10
-use crate::mem::Zeroize;
-
-
 const FK: [u32; 4]  = [ 0xa3b1_bac6, 0x56aa_3350, 0x677d_9197, 0xb270_22dc ];
 const CK: [u32; 32] = [
     0x00070e15, 0x1c232a31, 0x383f464d, 0x545b6269, 0x70777e85, 0x8c939aa1, 0xa8afb6bd, 0xc4cbd2d9,
@@ -80,18 +77,6 @@ fn sub_bytes(input: u32) -> u32 {
 #[derive(Clone)]
 pub struct Sm4 {
     pub(crate) rk: [[u32; 4]; Self::NR],
-}
-
-impl Zeroize for Sm4 {
-    fn zeroize(&mut self) {
-        self.rk.zeroize();
-    }
-}
-
-impl Drop for Sm4 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl core::fmt::Debug for Sm4 {
