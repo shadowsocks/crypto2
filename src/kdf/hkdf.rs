@@ -31,8 +31,21 @@ macro_rules! impl_hkdf_with_hmac {
             pub fn prk(&self) -> &[u8; Self::TAG_LEN] {
                 &self.prk
             }
-
+            
+            pub fn from_prk(prk_in: &[u8]) -> Self {
+                assert_eq!(prk_in.len(), Self::TAG_LEN);
+                
+                let mut prk = [0u8; Self::TAG_LEN];
+                prk.copy_from_slice(prk_in);
+                
+                Self { prk }
+            }
+            
             pub fn expand(&self, info: &[u8], okm: &mut [u8]) {
+                self.expand_multi_info(&[info], okm)
+            }
+
+            pub fn expand_multi_info(&self, info_components: &[&[u8]], okm: &mut [u8]) {
                 assert!(okm.len() <= Self::TAG_LEN * 255);
                 // HKDF-Expand(PRK, info, L) -> OKM
                 // 
@@ -59,7 +72,9 @@ macro_rules! impl_hkdf_with_hmac {
                 }
 
                 let mut hmac = $hmac::new(&self.prk);
-                hmac.update(info);
+                for info in info_components.iter() {
+                    hmac.update(info);
+                }
                 hmac.update(&[1]);
 
                 let mut t = hmac.finalize();
@@ -69,7 +84,9 @@ macro_rules! impl_hkdf_with_hmac {
                 for i in 1u8..n as u8 {
                     let mut hmac = $hmac::new(&self.prk);
                     hmac.update(&t);
-                    hmac.update(info);
+                    for info in info_components.iter() {
+                        hmac.update(info);
+                    }
                     hmac.update(&[i + 1]);
                     
                     t = hmac.finalize();
@@ -82,7 +99,9 @@ macro_rules! impl_hkdf_with_hmac {
                 if n > 0 && r > 0 {
                     let mut hmac = $hmac::new(&self.prk);
                     hmac.update(&t);
-                    hmac.update(info);
+                    for info in info_components.iter() {
+                        hmac.update(info);
+                    }
                     hmac.update(&[n as u8 + 1]);
                     
                     t = hmac.finalize();
