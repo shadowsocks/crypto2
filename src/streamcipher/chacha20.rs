@@ -1,4 +1,3 @@
-use crate::mem::Zeroize;
 // use crate::util::xor_si128_inplace;
 
 
@@ -36,18 +35,6 @@ fn v512_i8_xor_inplace(a: &mut [u8], b: &[u8]) {
 #[derive(Clone)]
 pub struct Chacha20 {
     initial_state: [u32; 16],
-}
-
-impl Zeroize for Chacha20 {
-    fn zeroize(&mut self) {
-        self.initial_state.zeroize();
-    }
-}
-
-impl Drop for Chacha20 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl core::fmt::Debug for Chacha20 {

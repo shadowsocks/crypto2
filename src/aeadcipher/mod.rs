@@ -18,6 +18,13 @@ pub use crate::blockmode::{
     Aria128Ccm, Aria256Ccm, 
     Aria128Gcm, Aria256Gcm, 
     Aria128GcmSiv, Aria256GcmSiv, 
+
+    // 3.5.1.  AEAD_SM4_GCM
+    // https://tools.ietf.org/html/rfc8998#section-3.5.1
+    // 
+    // 3.5.2.  AEAD_SM4_CCM
+    // https://tools.ietf.org/html/rfc8998#section-3.5.2
+    Sm4Gcm, Sm4Ccm,
 };
 
 

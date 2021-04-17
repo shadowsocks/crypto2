@@ -73,12 +73,18 @@ pub fn md5<T: AsRef<[u8]>>(data: T) -> [u8; Md5::DIGEST_LEN] {
 pub struct Md5 {
     buffer: [u8; Self::BLOCK_LEN],
     state: [u32; 4],
-    len: usize,      // in bytes.
+    len: u64,      // in bytes.
+    offset: usize,
 }
 
 impl Md5 {
     pub const BLOCK_LEN: usize  = 64;
     pub const DIGEST_LEN: usize = 16;
+
+    const BLOCK_LEN_BITS: u64   = Self::BLOCK_LEN as u64 * 8;
+    const MLEN_SIZE: usize      = core::mem::size_of::<u64>();
+    const MLEN_SIZE_BITS: u64   = Self::MLEN_SIZE as u64 * 8;
+    const MAX_PAD_LEN: usize    = Self::BLOCK_LEN + Self::MLEN_SIZE as usize;
 
 
     pub fn new() -> Self {
@@ -86,89 +92,55 @@ impl Md5 {
             buffer: [0u8; Self::BLOCK_LEN],
             state: INITIAL_STATE,
             len: 0,
+            offset: 0,
         }
     }
 
     pub fn update(&mut self, data: &[u8]) {
-        // TODO:
-        // Unlike Sha1 and Sha2, the length value in MD5 is defined as
-        // the length of the message mod 2^64 - ie: integer overflow is OK.
-        if data.len() == 0 {
-            return ();
-        }
-
-        let mut n = self.len % Self::BLOCK_LEN;
-        if n != 0 {
-            let mut i = 0usize;
-            loop {
-                if n == 64 || i >= data.len() {
-                    break;
-                }
-                self.buffer[n] = data[i];
-                n += 1;
+        let mut i = 0usize;
+        while i < data.len() {
+            if self.offset < Self::BLOCK_LEN {
+                self.buffer[self.offset] = data[i];
+                self.offset += 1;
                 i += 1;
-                self.len += 1;
             }
-
-            if self.len % Self::BLOCK_LEN != 0 {
-                return ();
-            } else {
+            
+            if self.offset == Self::BLOCK_LEN {
                 transform(&mut self.state, &self.buffer);
-
-                let data = &data[i..];
-                if data.len() > 0 {
-                    return self.update(data);
-                }
+                self.offset = 0;
+                self.len += Self::BLOCK_LEN as u64;
             }
-        }
-
-        if data.len() < 64 {
-            self.buffer[..data.len()].copy_from_slice(data);
-            self.len += data.len();
-        } else if data.len() == 64 {
-            transform(&mut self.state, data);
-            self.len += 64;
-        } else if data.len() > 64 {
-            let blocks = data.len() / 64;
-            for i in 0..blocks {
-                transform(&mut self.state, &data[i*64..i*64+64]);
-                self.len += 64;
-            }
-            let data = &data[blocks*64..];
-            if data.len() > 0 {
-                self.buffer[..data.len()].copy_from_slice(data);
-                self.len += data.len();
-            }
-        } else {
-            unreachable!()
         }
     }
 
     pub fn finalize(mut self) -> [u8; Self::DIGEST_LEN] {
-        // last_block
-        let len_bits = u64::try_from(self.len).unwrap() * 8;
-        let n = self.len % Self::BLOCK_LEN;
-        if n == 0 {
-            let mut block = [0u8; 64];
-            block[0] = 0x80;
-            block[56..].copy_from_slice(&len_bits.to_le_bytes());
-            transform(&mut self.state, &block);
-        } else {
-            self.buffer[n] = 0x80;
-            for i in n+1..64 {
-                self.buffer[i] = 0;
-            }
-            if 64 - n - 1 >= 8 {
-                self.buffer[56..].copy_from_slice(&len_bits.to_le_bytes());
-                transform(&mut self.state, &self.buffer);
-            } else {
-                transform(&mut self.state, &self.buffer);
-                let mut block = [0u8; 64];
-                block[56..].copy_from_slice(&len_bits.to_le_bytes());
-                transform(&mut self.state, &block);
-            }
-        }
+        let mlen = self.len + self.offset as u64;  // in bytes
+        let mlen_bits = mlen * 8;                  // in bits
+        
+        // pad len, in bits
+        let plen_bits = Self::BLOCK_LEN_BITS - (mlen_bits + Self::MLEN_SIZE_BITS + 1) % Self::BLOCK_LEN_BITS + 1;
+        // pad len, in bytes
+        let plen = plen_bits / 8;
+        debug_assert_eq!(plen_bits % 8, 0);
+        debug_assert!(plen > 1);
+        debug_assert_eq!((mlen + plen + Self::MLEN_SIZE as u64) % Self::BLOCK_LEN as u64, 0);
 
+        // NOTE: MAX_PAD_LEN 是一个很小的数字，所以这里可以安全的 unwrap.
+        let plen = usize::try_from(plen).unwrap();
+
+        let mut padding: [u8; Self::MAX_PAD_LEN] = [0u8; Self::MAX_PAD_LEN];
+        padding[0] = 0x80;
+
+        let mlen_octets: [u8; Self::MLEN_SIZE] = mlen_bits.to_le_bytes();
+        padding[plen..plen + Self::MLEN_SIZE].copy_from_slice(&mlen_octets);
+        
+        let data = &padding[..plen + Self::MLEN_SIZE];
+        self.update(data);
+
+        // NOTE: 数据填充完毕后，此时已经处理的消息应该是 BLOCK_LEN 的倍数，因此，offset 此时已被清零。
+        debug_assert_eq!(self.offset, 0);
+        
+        
         let mut output = [0u8; Self::DIGEST_LEN];
         output[ 0.. 4].copy_from_slice(&self.state[0].to_le_bytes());
         output[ 4.. 8].copy_from_slice(&self.state[1].to_le_bytes());

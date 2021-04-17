@@ -3,7 +3,6 @@
 // 
 // Galois/Counter Mode:
 // https://en.wikipedia.org/wiki/Galois/Counter_Mode
-use crate::mem::Zeroize;
 use crate::mem::constant_time_eq;
 use crate::util::xor_si128_inplace;
 use crate::mac::GHash;
@@ -32,19 +31,6 @@ macro_rules! impl_block_cipher_with_gcm_mode {
             ghash: GHash,
         }
 
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-                self.ghash.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
-        }
-
         // 6.  AES GCM Algorithms for Secure Shell
         // https://tools.ietf.org/html/rfc5647#section-6
         impl $name {
@@ -56,9 +42,9 @@ macro_rules! impl_block_cipher_with_gcm_mode {
             pub const TAG_LEN: usize   = $tlen;
             
             #[cfg(target_pointer_width = "64")]
-            pub const A_MAX: usize = 2305843009213693951; // 2 ** 61 - 1
+            pub const A_MAX: usize = 2305843009213693951; // 2^61 - 1
             #[cfg(target_pointer_width = "32")]
-            pub const A_MAX: usize = usize::MAX;          // 2 ** 32 - 1
+            pub const A_MAX: usize = usize::MAX;          // 2^32 - 1
 
             #[cfg(target_pointer_width = "64")]
             pub const P_MAX: usize = 68719476735;                // 2^36 - 31

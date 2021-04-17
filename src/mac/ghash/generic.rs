@@ -1,25 +1,9 @@
-use crate::mem::Zeroize;
-
 
 #[derive(Clone)]
 pub struct GHash {
     hh: [u64; Self::BLOCK_LEN],
     hl: [u64; Self::BLOCK_LEN],
     buf: [u8; Self::BLOCK_LEN],
-}
-
-impl Zeroize for GHash {
-    fn zeroize(&mut self) {
-        self.hh.zeroize();
-        self.hl.zeroize();
-        self.buf.zeroize();
-    }
-}
-
-impl Drop for GHash {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl GHash {

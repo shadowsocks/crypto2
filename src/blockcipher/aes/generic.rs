@@ -23,9 +23,6 @@
 // 
 // The Rijndael Animation
 // http://www.formaestudio.com/rijndaelinspector/
-use crate::mem::Zeroize;
-
-
 const WORD_SIZE: usize      =  4; // Word(u32) size in bytes
 
 const AES_BLOCK_LEN: usize  = 16; // Block Size (bytes)
@@ -65,13 +62,13 @@ macro_rules! impl_aes {
             }
 
             #[inline]
-            pub fn encrypt(&self, plaintext_in_and_ciphertext_out: &mut [u8]) {
-                encrypt(plaintext_in_and_ciphertext_out, &self.ek, $nr);
+            pub fn encrypt(&self, plaintext_in_ciphertext_out: &mut [u8]) {
+                encrypt(plaintext_in_ciphertext_out, &self.ek, $nr);
             }
 
             #[inline]
-            pub fn decrypt(&self, ciphertext_in_and_plaintext_out: &mut [u8]) {    
-                decrypt(ciphertext_in_and_plaintext_out, &self.ek, $nr);
+            pub fn decrypt(&self, ciphertext_in_plaintext_out: &mut [u8]) {    
+                decrypt(ciphertext_in_plaintext_out, &self.ek, $nr);
             }
         }
     }
@@ -81,48 +78,19 @@ impl_aes!(Aes128, AES128_NR, AES128_NK, "Aes128");
 impl_aes!(Aes192, AES192_NR, AES192_NK, "Aes192");
 impl_aes!(Aes256, AES256_NR, AES256_NK, "Aes256");
 
-impl Zeroize for Aes128 {
-    fn zeroize(&mut self) {
-        self.ek.zeroize();
-    }
-}
-impl Drop for Aes128 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
+
 impl core::fmt::Debug for Aes128 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Aes128").finish()
     }
 }
 
-impl Zeroize for Aes192 {
-    fn zeroize(&mut self) {
-        self.ek.zeroize();
-    }
-}
-impl Drop for Aes192 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
 impl core::fmt::Debug for Aes192 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Aes192").finish()
     }
 }
 
-impl Zeroize for Aes256 {
-    fn zeroize(&mut self) {
-        self.ek.zeroize();
-    }
-}
-impl Drop for Aes256 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
 impl core::fmt::Debug for Aes256 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.debug_struct("Aes256").finish()

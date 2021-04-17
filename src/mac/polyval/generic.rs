@@ -1,5 +1,3 @@
-use crate::mem::Zeroize;
-
 
 // Carry-less Multiplication
 #[inline]
@@ -29,20 +27,6 @@ pub struct Polyval {
     key: [u8; Self::KEY_LEN],
     h: [u8; Self::BLOCK_LEN],
 }
-
-impl Zeroize for Polyval {
-    fn zeroize(&mut self) {
-        self.key.zeroize();
-        self.h.zeroize();
-    }
-}
-
-impl Drop for Polyval {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
-
 
 impl Polyval {
     pub const KEY_LEN: usize   = 16;

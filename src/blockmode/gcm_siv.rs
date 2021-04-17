@@ -3,7 +3,6 @@
 // 
 // AES-GCM-SIV: Specification and Analysis
 // https://eprint.iacr.org/2017/168.pdf
-use crate::mem::Zeroize;
 use crate::mem::constant_time_eq;
 use crate::util::xor_si128_inplace;
 use crate::mac::Polyval;
@@ -25,19 +24,7 @@ macro_rules! impl_block_cipher_with_gcm_siv_mode {
         pub struct $name {
             cipher: $cipher,
         }
-
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
-        }
-
+        
         impl $name {
             pub const KEY_LEN: usize   = $cipher::KEY_LEN;
             pub const BLOCK_LEN: usize = $cipher::BLOCK_LEN;

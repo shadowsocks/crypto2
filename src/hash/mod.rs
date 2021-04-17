@@ -16,171 +16,302 @@ pub use self::sha2::*;
 pub use self::sha3::*;
 
 
-// NOTE: 等待 core::array::FixedSizeArray 稳定后，即可替换。
-pub trait Array<T> {
-    fn array_as_slice(&self) -> &[T];
-    fn array_as_mut_slice(&mut self) -> &mut [T];
-}
+// const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
+// #[allow(dead_code)]
+// const HEX_CHARS_UPPER: &[u8; 16] = b"0123456789ABCDEF";
 
-macro_rules! array_impls {
-    ($($N:literal)+) => {
-        $(
-            impl<T> Array<T> for [T; $N] {
-                fn array_as_slice(&self) -> &[T] {
-                    self
-                }
+// #[inline]
+// #[must_use]
+// fn byte2hex(byte: u8, table: &[u8; 16]) -> (u8, u8) {
+//     let high = table[((byte & 0xf0) >> 4) as usize];
+//     let low = table[(byte & 0x0f) as usize];
 
-                fn array_as_mut_slice(&mut self) -> &mut [T] {
-                    self
-                }
-
-            }
-        )+
-    }
-}
-array_impls! {
-     0  1  2  3  4  5  6  7  8  9
-    10 11 12 13 14 15 16 17 18 19
-    20 21 22 23 24 25 26 27 28 29
-    30 31 32 33 34 35 36 37 38 39 
-    40 41 42 43 44 45 46 47 48 49 
-    50 51 52 53 54 55 56 57 58 59 
-    60 61 62 63 64
-}
+//     (high, low)
+// }
 
 
-// TODO: multihash
-// https://github.com/multiformats/multicodec/blob/master/table.csv
+// pub trait Digest: Clone + Copy + AsRef<[u8]> + AsMut<[u8]> + Sized {
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum CryptoHashKind {
-    MD2,
-    MD4,
-    MD5,
-    SM3,
-    SHA1,
-    SHA2_256,
-    SHA2_384,
-    SHA2_512,
-}
+// }
 
-pub trait CryptoHasher {
-    const BLOCK_LEN : usize;
-    const OUTPUT_LEN: usize; // Output digest
-    
-    type Output: Array<u8> + Sized;
-    
-    fn digest(self) -> Self::Output;
-    fn hexdigest(self) -> String 
-    where 
-        Self: Sized 
-    {
-        let digest = self.digest();
-        let digest: &[u8] = digest.array_as_slice();
+// impl Digest for [u8; 16] { }
+// impl Digest for [u8; 20] { }
+// impl Digest for [u8; 28] { }
+// impl Digest for [u8; 32] { }
+// impl Digest for [u8; 48] { }
+// impl Digest for [u8; 64] { }
 
-        let mut s = String::with_capacity(digest.len()*2);
-        for n in digest.iter() {
-            s.push_str(format!("{:02x}", n).as_str());
-        }
-        s
-    }
-    
-    fn write<T: AsRef<[u8]>>(&mut self, bytes: T);
+// pub trait HexDigest: Copy + Clone + AsRef<str> + core::fmt::Display + core::fmt::Debug {
 
-    fn oneshot<T: AsRef<[u8]>>(data: T) -> Self::Output;
-}
+// }
+
+// impl HexDigest for HexStr<[u8; 16 * 2 + 2]> { }
+// impl HexDigest for HexStr<[u8; 20 * 2 + 2]> { }
+// impl HexDigest for HexStr<[u8; 28 * 2 + 2]> { }
+// impl HexDigest for HexStr<[u8; 32 * 2 + 2]> { }
+// impl HexDigest for HexStr<[u8; 48 * 2 + 2]> { }
+// impl HexDigest for HexStr<[u8; 64 * 2 + 2]> { }
 
 
-pub trait BuildCryptoHasher {
-    type Hasher: CryptoHasher;
+// // TODO: multihash
+// // https://github.com/multiformats/multicodec/blob/master/table.csv
 
-    fn build_hasher() -> Self::Hasher;
-}
 
-// pub trait CryptoHash {
-//     /// Feeds this value into the given `Hasher`.
-//     fn crypto_hash<H: CryptoHasher>(&self, state: &mut H);
+// #[derive(Clone, Copy)]
+// pub struct HexStr<T: Copy + Clone + AsRef<[u8]> + AsMut<[u8]>> {
+//     inner: T,
+// }
 
-//     /// Feeds a slice of this type into the given `Hasher`.
-//     fn crypto_hash_slice<H: CryptoHasher>(data: &[Self], state: &mut H)
-//     where
-//         Self: Sized,
-//     {
-//         for piece in data {
-//             piece.crypto_hash(state);
+// impl<T: Copy + Clone + AsRef<[u8]> + AsMut<[u8]>> HexStr<T> {
+//     pub fn to_lowercase(&self) -> Self {
+//         let mut inner = self.inner.clone();
+//         let bytes: &mut [u8] = inner.as_mut();
+
+//         for byte in bytes.iter_mut() {
+//             byte.make_ascii_lowercase();
+//         }
+
+//         Self { inner }
+//     }
+
+//     pub fn to_uppercase(&self) -> Self {
+//         let mut inner = self.inner.clone();
+//         let bytes: &mut [u8] = inner.as_mut();
+
+//         for byte in bytes.iter_mut() {
+//             byte.make_ascii_uppercase();
+//         }
+
+//         Self { inner }
+//     }
+
+//     pub fn as_str(&self) -> &str {
+//         unsafe {
+//             let bytes: &[u8] = self.inner.as_ref();
+//             core::str::from_utf8_unchecked(bytes)
+//         }
+//     }
+
+//     pub fn as_str_mut(&mut self) -> &mut str {
+//         unsafe {
+//             let bytes: &mut [u8] = self.inner.as_mut();
+//             core::str::from_utf8_unchecked_mut(bytes)
+//         }
+//     }
+
+//     pub fn as_str_without_prefix(&self) -> &str {
+//         unsafe {
+//             let bytes: &[u8] = self.inner.as_ref();
+//             core::str::from_utf8_unchecked(&bytes[2..])
+//         }
+//     }
+
+//     pub fn as_str_mut_without_prefix(&mut self) -> &mut str {
+//         unsafe {
+//             let bytes: &mut [u8] = self.inner.as_mut();
+//             core::str::from_utf8_unchecked_mut(&mut bytes[2..])
 //         }
 //     }
 // }
 
-// impl<T: CryptoHash> CryptoHash for [T] {
-//     fn crypto_hash<H: CryptoHasher>(&self, state: &mut H) {
-//         CryptoHash::crypto_hash_slice(self, state);
+// impl<T: Copy + Clone + AsRef<[u8]> + AsMut<[u8]>> core::fmt::Display for HexStr<T> {
+//     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+//         let s = if f.alternate() {
+//             self.as_str()
+//         } else {
+//             self.as_str_without_prefix()
+//         };
+//         core::fmt::Display::fmt(s, f)
 //     }
 // }
-// impl<'a, T: CryptoHash> CryptoHash for &'a [T] {
-//     fn crypto_hash<H: CryptoHasher>(&self, state: &mut H) {
-//         CryptoHash::crypto_hash_slice(self, state);
+// impl<T: Copy + Clone + AsRef<[u8]> + AsMut<[u8]>> core::fmt::Debug for HexStr<T> {
+//     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+//         let s = if f.alternate() {
+//             self.as_str()
+//         } else {
+//             self.as_str_without_prefix()
+//         };
+//         core::fmt::Debug::fmt(s, f)
 //     }
 // }
 
-macro_rules! impl_crypto_hasher {
-    ($name:tt) => {
-        impl CryptoHasher for $name {
-            const BLOCK_LEN : usize = $name::BLOCK_LEN;
-            const OUTPUT_LEN: usize = $name::DIGEST_LEN;
+// impl<T: Copy + Clone + AsRef<[u8]> + AsMut<[u8]>> core::convert::AsRef<str> for HexStr<T> {
+//     fn as_ref(&self) -> &str {
+//         self.as_str_without_prefix()
+//     }
+// }
+
+// #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+// pub enum CryptoHashKind {
+//     MD2,
+//     MD4,
+//     MD5,
+//     SM3,
+//     SHA1,
+//     SHA2_224,
+//     SHA2_256,
+//     SHA2_384,
+//     SHA2_512,
+// }
+
+// pub trait CryptoHasher {
+//     // const BLOCK_LEN : usize;
+//     // const OUTPUT_LEN: usize; // Output digest
+//     // const KIND: CryptoHashKind;
+
+//     type Output: Digest;
+//     type HexOutput: HexDigest;
+
+//     fn kind(&self) -> CryptoHashKind;
+    
+//     fn block_len(&self) -> usize;
+
+//     fn output_len(&self) -> usize;
+
+//     fn write<T: AsRef<[u8]>>(&mut self, bytes: T);
+
+//     fn digest(self) -> Self::Output;
+
+//     fn hexdigest(self) -> Self::HexOutput;
+
+//     fn oneshot<T: AsRef<[u8]>>(data: T) -> Self::Output;
+// }
+
+
+// pub trait BuildCryptoHasher {
+//     type Hasher: CryptoHasher;
+
+//     fn build_hasher() -> Self::Hasher;
+// }
+
+// macro_rules! impl_crypto_hasher {
+//     ($name:tt, $kind:tt) => {
+//         impl CryptoHasher for $name {
+//             // const BLOCK_LEN : usize    = $name::BLOCK_LEN;
+//             // const OUTPUT_LEN: usize    = $name::DIGEST_LEN;
+//             // const KIND: CryptoHashKind = CryptoHashKind::$kind;
+
+//             type Output    = [u8; Self::DIGEST_LEN];
+//             type HexOutput = HexStr<[u8; Self::DIGEST_LEN * 2 + 2]>;
             
-            type Output = [u8; Self::DIGEST_LEN];
+//             fn kind(&self) -> CryptoHashKind {
+//                 CryptoHashKind::$kind
+//             }
 
-            // fn finish(self);
+//             fn block_len(&self) -> usize {
+//                 $name::BLOCK_LEN
+//             }
+            
+//             fn output_len(&self) -> usize {
+//                 $name::DIGEST_LEN
+//             }
+            
+//             fn write<T: AsRef<[u8]>>(&mut self, bytes: T) {
+//                 self.update(bytes.as_ref());
+//             }
+            
+//             fn digest(self) -> Self::Output {
+//                 self.finalize()
+//             }
+            
+//             fn hexdigest(self) -> Self::HexOutput {
+//                 let digest = self.digest();
+                
+//                 let mut hex_bytes = [0u8; Self::DIGEST_LEN * 2 + 2];
+//                 hex_bytes[0] = b'0';
+//                 hex_bytes[1] = b'x';
+                
+//                 for i in 0..Self::DIGEST_LEN {
+//                     let (hi, lo) = byte2hex(digest[i], &HEX_CHARS_LOWER);
+//                     let offset = i * 2 + 2;
+//                     hex_bytes[offset] = hi;
+//                     hex_bytes[offset + 1] = lo;
+//                 }
+                
+//                 HexStr { inner: hex_bytes }
+//             }
+            
+//             fn oneshot<T: AsRef<[u8]>>(data: T) -> Self::Output {
+//                 Self::oneshot(data)
+//             }
+//         }
+//     }
+// }
 
-            fn write<T: AsRef<[u8]>>(&mut self, bytes: T) {
-                self.update(bytes.as_ref());
-            }
+// macro_rules! impl_build_crypto_hasher {
+//     ($name:tt) => {
+//         impl BuildCryptoHasher for $name {
+//             type Hasher = Self;
 
-            fn digest(self) -> Self::Output {
-                self.finalize()
-            }
+//             fn build_hasher() -> Self::Hasher {
+//                 Self::new()
+//             }
+//         }
+//     }
+// }
 
-            fn oneshot<T: AsRef<[u8]>>(data: T) -> Self::Output {
-                Self::oneshot(data)
+// impl_crypto_hasher!(Md2, MD2);
+// impl_crypto_hasher!(Md4, MD4);
+// impl_crypto_hasher!(Md5, MD5);
+// impl_crypto_hasher!(Sm3, SM3);
+
+// impl_build_crypto_hasher!(Md2);
+// impl_build_crypto_hasher!(Md4);
+// impl_build_crypto_hasher!(Md5);
+// impl_build_crypto_hasher!(Sm3);
+
+// // SHA-1
+// impl_crypto_hasher!(Sha1, SHA1);
+// impl_build_crypto_hasher!(Sha1);
+
+// // SHA-2
+// impl_crypto_hasher!(Sha224, SHA2_224);
+// impl_crypto_hasher!(Sha256, SHA2_256);
+// impl_crypto_hasher!(Sha384, SHA2_384);
+// impl_crypto_hasher!(Sha512, SHA2_512);
+// impl_build_crypto_hasher!(Sha224);
+// impl_build_crypto_hasher!(Sha256);
+// impl_build_crypto_hasher!(Sha384);
+// impl_build_crypto_hasher!(Sha512);
+
+// // SHA-3
+
+
+
+#[test]
+fn test_hasher_oneshot() {
+    macro_rules! test_oneshot {
+        ($name:tt) => {
+            {
+                let mut m1 = $name::new();
+                m1.update(&hex::decode("4b01a2d762fada9ede4d1034a13dc69c").unwrap());
+                m1.update(&hex::decode("496d616b65746869735f4c6f6e6750617373506872617365466f725f7361666574795f323031395f30393238405f4021").unwrap());
+                let h1 = m1.finalize();
+
+                let h2 = $name::oneshot(&hex::decode("4b01a2d762fada9ede4d1034a13dc69c\
+            496d616b65746869735f4c6f6e6750617373506872617365466f725f7361666574795f323031395f30393238405f4021").unwrap());
+
+                assert_eq!(h1, h2);
             }
         }
     }
+    
+    test_oneshot!(Md2);
+    test_oneshot!(Md4);
+    test_oneshot!(Md5);
+    test_oneshot!(Sm3);
+
+    // SHA-1
+    test_oneshot!(Sha1);
+    
+    // SHA-2
+    test_oneshot!(Sha224);
+    test_oneshot!(Sha256);
+    test_oneshot!(Sha384);
+    test_oneshot!(Sha512);
+
+    // SHA-3
 }
-
-macro_rules! impl_build_crypto_hasher {
-    ($name:tt) => {
-        impl BuildCryptoHasher for $name {
-            type Hasher = Self;
-
-            fn build_hasher() -> Self::Hasher {
-                Self::new()
-            }
-        }
-    }
-}
-
-impl_crypto_hasher!(Md2);
-impl_crypto_hasher!(Md4);
-impl_crypto_hasher!(Md5);
-impl_crypto_hasher!(Sm3);
-impl_crypto_hasher!(Sha1);
-impl_build_crypto_hasher!(Md2);
-impl_build_crypto_hasher!(Md4);
-impl_build_crypto_hasher!(Md5);
-impl_build_crypto_hasher!(Sm3);
-impl_build_crypto_hasher!(Sha1);
-
-// SHA-2
-impl_crypto_hasher!(Sha256);
-impl_crypto_hasher!(Sha384);
-impl_crypto_hasher!(Sha512);
-impl_build_crypto_hasher!(Sha256);
-impl_build_crypto_hasher!(Sha384);
-impl_build_crypto_hasher!(Sha512);
-
-// SHA-3
-
 
 
 #[cfg(test)]

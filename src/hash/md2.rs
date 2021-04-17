@@ -48,21 +48,6 @@ fn transform(state_and_checksum: &mut [u8; 64], block: &[u8]) {
     }
 }
 
-
-fn last_block(data: &[u8]) -> [u8; Md2::BLOCK_LEN] {
-    debug_assert!(data.len() < Md2::BLOCK_LEN);
-
-    let mut block = [0u8; Md2::BLOCK_LEN];
-    block[..data.len()].copy_from_slice(data);
-
-    let pad_byte = (Md2::BLOCK_LEN - data.len()) as u8;
-    for byte in &mut block[data.len()..].iter_mut() {
-        *byte = pad_byte;
-    }
-
-    block
-}
-
 pub fn md2<T: AsRef<[u8]>>(data: T) -> [u8; Md2::DIGEST_LEN] {
     Md2::oneshot(data)
 }
@@ -83,7 +68,6 @@ impl Md2 {
         Self {
             buffer: [0u8; Self::BLOCK_LEN],
             state: [0u8; 64],
-            // len: 0usize,
             offset: 0usize,
         }
     }
@@ -106,15 +90,18 @@ impl Md2 {
     }
 
     pub fn finalize(mut self) -> [u8; Self::DIGEST_LEN] {
-        let data = &self.buffer[..self.offset];
-
-        let block = last_block(data);
-        transform(&mut self.state, &block);
-
-        let mut block = [0u8; 16];
-        block.copy_from_slice(&self.state[48..]);
-        transform(&mut self.state, &block);
-
+        let pad_byte = (Self::BLOCK_LEN - self.offset) as u8;
+        
+        for i in self.offset..Self::BLOCK_LEN {
+            self.buffer[i] = pad_byte;
+        }
+        
+        // last block
+        transform(&mut self.state, &self.buffer);
+        
+        self.buffer.copy_from_slice(&self.state[48..]);
+        transform(&mut self.state, &self.buffer);
+        
         let mut output = [0u8; Self::DIGEST_LEN];
         output.copy_from_slice(&self.state[..Self::DIGEST_LEN]);
         output

@@ -11,7 +11,6 @@
 // Block Cipher Techniques
 // https://csrc.nist.gov/projects/block-cipher-techniques/bcm/modes-development
 use super::dbl;
-use crate::mem::Zeroize;
 use crate::mem::constant_time_eq;
 use crate::util::xor_si128_inplace;
 use crate::util::and_si128_inplace;
@@ -39,21 +38,6 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
             cmac_k1: [u8; Self::BLOCK_LEN],
             cmac_k2: [u8; Self::BLOCK_LEN],
         }
-
-        impl Zeroize for $name {
-            fn zeroize(&mut self) {
-                self.cipher.zeroize();
-                self.cmac_cipher.zeroize();
-                self.cmac_k1.zeroize();
-                self.cmac_k2.zeroize();
-            }
-        }
-
-        impl Drop for $name {
-            fn drop(&mut self) {
-                self.zeroize();
-            }
-        }
         
         impl $name {
             pub const KEY_LEN: usize   = $cipher::KEY_LEN * 2; // 16 Byte Cipher Key, 16 Byte CMac Key
@@ -61,8 +45,8 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
             pub const TAG_LEN: usize   = 16;
             
             pub const A_MAX: usize = usize::MAX;      // unlimited
-            pub const P_MAX: usize = usize::MAX - 16; // 2 ^ 132
-            pub const C_MAX: usize = usize::MAX;      // 2 ^ 132 + TAG_LEN
+            pub const P_MAX: usize = usize::MAX - 16; // 2^132
+            pub const C_MAX: usize = usize::MAX;      // 2^132 + TAG_LEN
             
             pub const N_MIN: usize = 1;
             pub const N_MAX: usize = usize::MAX;

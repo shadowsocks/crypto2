@@ -1,4 +1,3 @@
-use crate::mem::Zeroize;
 use crate::mem::constant_time_eq;
 use crate::mac::Poly1305;
 
@@ -13,18 +12,6 @@ use self::chacha20::Chacha20;
 pub struct Chacha20Poly1305 {
     c1: Chacha20,
     c2: Chacha20,
-}
-
-impl Zeroize for Chacha20Poly1305 {
-    fn zeroize(&mut self) {
-        self.c1.zeroize();
-        self.c2.zeroize();
-    }
-}
-impl Drop for Chacha20Poly1305 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl core::fmt::Debug for Chacha20Poly1305 {

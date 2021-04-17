@@ -1,4 +1,3 @@
-use crate::mem::Zeroize;
 use crate::mem::constant_time_eq;
 use crate::mac::Poly1305;
 use crate::streamcipher::Chacha20;
@@ -10,17 +9,6 @@ use crate::streamcipher::Chacha20;
 #[derive(Clone)]
 pub struct Chacha20Poly1305 {
     chacha20: Chacha20,
-}
-
-impl Zeroize for Chacha20Poly1305 {
-    fn zeroize(&mut self) {
-        self.chacha20.zeroize();
-    }
-}
-impl Drop for Chacha20Poly1305 {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
 }
 
 impl core::fmt::Debug for Chacha20Poly1305 {
