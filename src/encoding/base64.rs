@@ -127,45 +127,7 @@ static STANDARD_DECODE_TABLE: [u8; 256] = [
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
 ];
 
-// TODO:
-// 
-// 7. Forgiving base64
-// https://infra.spec.whatwg.org/#forgiving-base64
-// 
-// ASCII whitespace is U+0009 TAB, U+000A LF, U+000C FF, U+000D CR, or U+0020 SPACE.
-// 0x09 0x0a 0x0c 0x0d 0x20
-const TAB: u8   = 0x09; //  9 \t
-const LF: u8    = 0x0a; // 10 \n
-const FF: u8    = 0x0c; // 12
-const CR: u8    = 0x0d; // 13 \r
-const SPACE: u8 = 0x20; // 32
 
-static FORGIVING_TABLE_INV: [u8; 256] = [
-//                                                        b'\t' b'\n'       0x0c  b'\r'
-    ____, ____, ____, ____, ____, ____, ____, ____, ____,  TAB,   LF, ____,   FF,   CR, ____, ____, 
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-//  b' '                                                              b'+'                    b'/'
-    SPACE, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 0x3e, ____, ____, ____, 0x3f, 
-//    0     1     2     3     4     5     6     7     8     9                     b'='
-    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, ____, ____, ____, _EXT, ____, ____, 
-//          A     B     C     D     E     F     G     H     I     J     K     L     M     N     O
-    ____, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 
-//    P     Q     R     S     T     U     V     W     X     Y     Z
-    0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, ____, ____, ____, ____, ____, 
-//          a     b     c     d     e     f     g     h     i     j     k     l     m     n     o
-    ____, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 
-//    p     q     r     s     t     u     v     w     x     y     z
-    0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, ____, ____, ____, ____, ____, 
-
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
-];
 
 
 
@@ -546,20 +508,214 @@ fn encode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 64], input
 }
 
 
-// TODO:
-// 
 // 7. Forgiving base64
 // https://infra.spec.whatwg.org/#forgiving-base64
 // 
 // ASCII whitespace is U+0009 TAB, U+000A LF, U+000C FF, U+000D CR, or U+0020 SPACE.
 // 0x09 0x0a 0x0c 0x0d 0x20
-// const TAB: u8   = 0x09; //  9
-// const LF: u8    = 0x0a; // 10
+// 
+// const TAB: u8   = 0x09; //  9 \t
+// const LF: u8    = 0x0a; // 10 \n
 // const FF: u8    = 0x0c; // 12
-// const CR: u8    = 0x0d; // 13
+// const CR: u8    = 0x0d; // 13 \r
 // const SPACE: u8 = 0x20; // 32
 
+const SKIP: u8 = 0xfd;
+const PADB: u8 = 0x3d; // b'='
+static FORGIVING_TABLE_INV: [u8; 256] = [
+//                                                        b'\t' b'\n'       0x0c  b'\r'
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, SKIP, SKIP, ____, SKIP, SKIP, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+//  b' '                                                              b'+'                    b'/'
+    SKIP, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 0x3e, ____, ____, ____, 0x3f, 
+//    0     1     2     3     4     5     6     7     8     9                     b'='
+    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, ____, ____, ____, ____, ____, ____, 
+//          A     B     C     D     E     F     G     H     I     J     K     L     M     N     O
+    ____, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 
+//    P     Q     R     S     T     U     V     W     X     Y     Z
+    0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, ____, ____, ____, ____, ____, 
+//          a     b     c     d     e     f     g     h     i     j     k     l     m     n     o
+    ____, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 
+//    p     q     r     s     t     u     v     w     x     y     z
+    0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, ____, ____, ____, ____, ____, 
 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+];
+
+
+#[inline]
+pub fn forgiving_decode<R: AsRef<[u8]>>(input: R) -> Result<Vec<u8>, Error> {
+    let input = input.as_ref();
+    if input.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let ilen = input.len();
+    let olen = decode_buffer_len(ilen);
+
+    let mut output = vec![0u8; olen];
+
+    let amt = forgiving_decode_to_slice(input, &mut output)?;
+    if amt < olen {
+        output.truncate(amt);
+    }
+
+    Ok(output)
+}
+
+#[inline]
+fn forgiving_decode_to_slice<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &mut W) -> Result<usize, Error> {
+    let input  = input.as_ref();
+    let output = output.as_mut();
+
+    let ilen = input.len();
+
+    let mut ipos  = 0usize; // input data index
+    let mut opos  = 0usize; // output data index
+
+    let mut group = 0u32;   // 3 bytes encode to 4 base64 character.
+    let mut gpos  = 0u8;    // group bit index
+
+    // 1. Remove all ASCII whitespace from data.
+    let mut sp_len  = 0usize;
+    for i in 0..ilen {
+        let v = FORGIVING_TABLE_INV[input[i] as usize];
+        if v == SKIP {
+            sp_len += 1;
+        } 
+    }
+
+    // PADDING-LEN
+    let pad_len = {
+        let mut len = 0usize;
+        let mut i = ilen;
+        while i > 0 {
+            if input[i - 1] == PADB {
+                len += 1;
+                i -= 1;
+            } else {
+                break;
+            }
+        }
+
+        len
+    };
+
+    if pad_len > 2 {
+        return Err(Error {
+            pos: 0,
+            byte: input[0],
+            kind: ErrorKind::InvalidPaddingLength,
+        });
+    }
+
+    // 2. If data’s code point length divides by 4 leaving no remainder, then:
+    let mut dlen = ilen - sp_len;
+    if dlen % 4 == 0 {
+        // 2-1. If data ends with one or two U+003D (=) code points, then remove them from data.
+        dlen -= pad_len;
+    }
+    // 3. If data’s code point length divides by 4 leaving a remainder of 1, then return failure.
+    if dlen % 4 == 1 {
+        return Err(Error {
+            pos: 0,
+            byte: input[0],
+            kind: ErrorKind::TrailingUnPaddedBits,
+        });
+    }
+
+    let input = &input[..ilen - pad_len];
+
+    let ilen = input.len();
+
+    while ipos < ilen {
+        let val = FORGIVING_TABLE_INV[input[ipos] as usize];
+        match val {
+            ____ => {
+                return Err(Error {
+                    pos: ipos,
+                    byte: input[ipos],
+                    kind: ErrorKind::InvalidCodedCharacter,
+                });
+            },
+            SKIP => {
+                ipos += 1;
+            },
+            _ => {
+                match gpos {
+                    0 => {
+                        group = (val as u32) << 26;
+                        gpos = 6;
+                    },
+                    6 => {
+                        group |= (val as u32) << 20;
+                        gpos = 12;
+                    },
+                    12 => {
+                        group |= (val as u32) << 14;
+                        gpos = 18;
+                    },
+                    18 => {
+                        group |= (val as u32) << 8;
+                        let [b1, b2, b3, _] = group.to_be_bytes();
+
+                        output[opos + 0] = b1;
+                        output[opos + 1] = b2;
+                        output[opos + 2] = b3;
+
+                        opos += 3;
+                        gpos  = 0;
+                    },
+                    _ => unreachable!(),
+                }
+
+                ipos += 1;
+            }
+        }
+    }
+
+    // Check trailing bits
+    match gpos {
+        0 => {
+
+        },
+        6 => {
+            // Last 6-bits was droped.
+            unreachable!()
+        },
+        12 => {
+            // Last 4-bits was droped.
+            // 
+            // If it contains 12 bits, then discard the last four and interpret the remaining eight as an 8-bit big-endian number.
+            let [b1, b2, _, _] = group.to_be_bytes();
+            
+            output[opos + 0] = b1;
+
+            opos += 1;
+        },
+        18 => {
+            // Last 2-bits was droped.
+            // 
+            // If it contains 18 bits, then discard the last two and interpret the remaining 16 as two 8-bit big-endian numbers.
+            let [b1, b2, b3, _] = group.to_be_bytes();
+
+            output[opos + 0] = b1;
+            output[opos + 1] = b2;
+
+            opos += 2;
+        },
+        _ => unreachable!(),
+    }
+
+    Ok(opos)
+}
 
 #[test]
 fn test_base64() {
