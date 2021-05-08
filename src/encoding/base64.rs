@@ -778,6 +778,14 @@ fn test_base64_trailing_bits() {
     assert_eq!(std::str::from_utf8(&decode("YRA=").unwrap()), Ok("a\u{10}"));
 }
 
+
+#[test]
+fn test_forgiving_decode() {
+    // https://infra.spec.whatwg.org/#forgiving-base64
+    assert_eq!(std::str::from_utf8(&forgiving_decode("YQ").unwrap()), Ok("a"));
+    assert_eq!(std::str::from_utf8(&forgiving_decode("YR").unwrap()), Ok("a"));
+}
+
 #[cfg(test)]
 #[bench]
 fn bench_encode(b: &mut test::Bencher) {
