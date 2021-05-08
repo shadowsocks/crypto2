@@ -11,10 +11,12 @@ documentation = "https://docs.rs/crypto2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
+libc = "0.2"
 
 [dev-dependencies]
 hex = "0.4"
+percent-encoding = "2.1"
+
 
 [features]
 default = [

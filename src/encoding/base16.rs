@@ -26,8 +26,8 @@ static HEX_ENCODE_TABLE_LOWER_CASE: [u8; 16] = [
 ];
 
 
-const ____: u8 = 0xff;
-static HEX_DECODE_TABLE: [u8; 256] = [
+pub(crate) const ____: u8 = 0xff;
+pub(crate) static HEX_DECODE_TABLE: [u8; 256] = [
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____,
@@ -165,6 +165,7 @@ fn test_base16() {
     assert_eq!(hex_decode("666f6f626172").unwrap(), b"foobar");
 }
 
+#[cfg(test)]
 #[bench]
 fn bench_encode(b: &mut test::Bencher) {
     let s = "abcdefg";
@@ -174,6 +175,7 @@ fn bench_encode(b: &mut test::Bencher) {
     })
 }
 
+#[cfg(test)]
 #[bench]
 fn bench_decode(b: &mut test::Bencher) {
     let s = "666F6F626172";
@@ -183,9 +185,9 @@ fn bench_decode(b: &mut test::Bencher) {
     })
 }
 
-
+#[cfg(test)]
 #[bench]
-fn bench_hex_crate_encode(b: &mut test::Bencher) {
+fn bench_crate_io_hex_encode(b: &mut test::Bencher) {
     let s = "abcdefg";
     let mut output = [0u8; 14];
     b.iter(|| {
@@ -193,8 +195,9 @@ fn bench_hex_crate_encode(b: &mut test::Bencher) {
     })
 }
 
+#[cfg(test)]
 #[bench]
-fn bench_hex_crate_decode(b: &mut test::Bencher) {
+fn bench_crate_io_hex_decode(b: &mut test::Bencher) {
     let s = "666F6F626172";
     let mut output = [0u8; 6];
     b.iter(|| {

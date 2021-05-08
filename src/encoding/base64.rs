@@ -127,6 +127,47 @@ static STANDARD_DECODE_TABLE: [u8; 256] = [
     ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
 ];
 
+// TODO:
+// 
+// 7. Forgiving base64
+// https://infra.spec.whatwg.org/#forgiving-base64
+// 
+// ASCII whitespace is U+0009 TAB, U+000A LF, U+000C FF, U+000D CR, or U+0020 SPACE.
+// 0x09 0x0a 0x0c 0x0d 0x20
+const TAB: u8   = 0x09; //  9 \t
+const LF: u8    = 0x0a; // 10 \n
+const FF: u8    = 0x0c; // 12
+const CR: u8    = 0x0d; // 13 \r
+const SPACE: u8 = 0x20; // 32
+
+static FORGIVING_TABLE_INV: [u8; 256] = [
+//                                                        b'\t' b'\n'       0x0c  b'\r'
+    ____, ____, ____, ____, ____, ____, ____, ____, ____,  TAB,   LF, ____,   FF,   CR, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+//  b' '                                                              b'+'                    b'/'
+    SPACE, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 0x3e, ____, ____, ____, 0x3f, 
+//    0     1     2     3     4     5     6     7     8     9                     b'='
+    0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, ____, ____, ____, _EXT, ____, ____, 
+//          A     B     C     D     E     F     G     H     I     J     K     L     M     N     O
+    ____, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 
+//    P     Q     R     S     T     U     V     W     X     Y     Z
+    0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, ____, ____, ____, ____, ____, 
+//          a     b     c     d     e     f     g     h     i     j     k     l     m     n     o
+    ____, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 
+//    p     q     r     s     t     u     v     w     x     y     z
+    0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, ____, ____, ____, ____, ____, 
+
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+    ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, 
+];
+
+
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum ErrorKind {
@@ -509,6 +550,14 @@ fn encode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 64], input
 // 
 // 7. Forgiving base64
 // https://infra.spec.whatwg.org/#forgiving-base64
+// 
+// ASCII whitespace is U+0009 TAB, U+000A LF, U+000C FF, U+000D CR, or U+0020 SPACE.
+// 0x09 0x0a 0x0c 0x0d 0x20
+// const TAB: u8   = 0x09; //  9
+// const LF: u8    = 0x0a; // 10
+// const FF: u8    = 0x0c; // 12
+// const CR: u8    = 0x0d; // 13
+// const SPACE: u8 = 0x20; // 32
 
 
 
@@ -573,6 +622,7 @@ fn test_base64_trailing_bits() {
     assert_eq!(std::str::from_utf8(&decode("YRA=").unwrap()), Ok("a\u{10}"));
 }
 
+#[cfg(test)]
 #[bench]
 fn bench_encode(b: &mut test::Bencher) {
     let input = b"fooba";
@@ -585,6 +635,8 @@ fn bench_encode(b: &mut test::Bencher) {
         encode_to_slice(input, &mut output)
     })
 }
+
+#[cfg(test)]
 #[bench]
 fn bench_decode(b: &mut test::Bencher) {
     let input = b"Zm9vYmE=";

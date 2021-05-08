@@ -30,3 +30,5 @@ pub mod aeadcipher;
 
 #[cfg(feature = "openssh")]
 pub mod openssh;
+
+pub mod encoding;
