@@ -70,11 +70,13 @@ impl u32x4 {
 impl u32x4 {
     #[inline]
     pub fn load(mem_addr: *const u8) -> Self {
-        unsafe { Self(*(mem_addr as *const uint32x4_t)) }
+        unsafe { Self(vld1q_u32(mem_addr as *const u32)) }
     }
 
     #[inline]
     pub fn store(self, mem_addr: *mut u8) {
+        // void vst1q_u8   (uint8_t * ptr, uint8x16_t val)
+        // void vst1q_u32 (uint32_t * ptr, uint32x4_t val)
         unsafe {
             let dst = mem_addr as *mut uint32x4_t;
             *dst = self.0;
