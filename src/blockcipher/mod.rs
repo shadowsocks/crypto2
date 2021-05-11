@@ -216,6 +216,10 @@ fn bench_camellia256_enc(b: &mut test::Bencher) {
 #[bench]
 fn bench_aes128_enc(b: &mut test::Bencher) {
     let key = hex::decode("000102030405060708090a0b0c0d0e0f").unwrap();
+    let mut ciphertext = test::black_box([
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+    ]);
 
     let cipher = Aes128::new(&key);
 
@@ -235,15 +239,15 @@ fn bench_aes128_enc(b: &mut test::Bencher) {
 fn bench_aes256_enc(b: &mut test::Bencher) {
     let key = hex::decode("000102030405060708090a0b0c0d0e0f\
 000102030405060708090a0b0c0d0e0f").unwrap();
+    let mut ciphertext = test::black_box([
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 
+        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+    ]);
 
     let cipher = Aes256::new(&key);
-
+    
     b.bytes = Aes256::BLOCK_LEN as u64;
     b.iter(|| {
-        let mut ciphertext = test::black_box([
-            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 
-            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
-        ]);
         cipher.encrypt(&mut ciphertext);
         ciphertext
     })

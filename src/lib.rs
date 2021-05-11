@@ -1,5 +1,5 @@
 #![cfg_attr(test, feature(test))]
-#![feature(stdsimd, llvm_asm)]
+#![feature(stdsimd, llvm_asm, simd_ffi, link_llvm_intrinsics)]
 #![allow(unused_macros, unused_assignments)]
 
 #[cfg(test)]
@@ -32,3 +32,5 @@ pub mod aeadcipher;
 pub mod openssh;
 
 pub mod encoding;
+
+// pub mod simd;

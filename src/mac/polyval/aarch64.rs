@@ -3,32 +3,90 @@ use core::arch::aarch64::*;
 use core::mem::transmute;
 
 
+// NOTE: 等待 stdarch 项目增加 这个指令函数。
+type p64       = u64;
+type p128      = u128;
+type poly128_t = u128;
+
+/// Polynomial multiply long
 #[inline]
-unsafe fn _mm_clmulepi64_si128(a: uint8x16_t, b: uint8x16_t, imm8: u8) -> uint8x16_t {
-    match imm8 {
-        0x00 => {
-            let a: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(a), 0);
-            let b: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(b), 0);
-            transmute(vmull_p64(a, b))
-        },
-        0x11 => {
-            let a: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(a), 1);
-            let b: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(b), 1);
-            transmute(vmull_p64(a, b))
-        },
-        0x10 => {
-            let a: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(a), 0);
-            let b: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(b), 1);
-            transmute(vmull_p64(a, b))
-        },
-        0x01 => {
-            let a: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(a), 1);
-            let b: u64 = vgetq_lane_u64(vreinterpretq_u64_u8(b), 0);
-            transmute(vmull_p64(a, b))
-        },
-        _ => unreachable!()
+// #[target_feature(enable = "neon,crypto")]
+// #[cfg_attr(test, assert_instr(pmull))]
+pub unsafe fn vmull_p64(a: p64, b: p64) -> p128 {
+    #[allow(improper_ctypes)]
+    extern "C" {
+        #[link_name = "llvm.aarch64.neon.pmull64"]
+        fn vmull_p64_(a: p64, b: p64) -> int8x16_t;
     }
+    transmute(vmull_p64_(a, b))
 }
+
+/// Polynomial multiply long
+#[inline]
+// #[target_feature(enable = "neon,crypto")]
+// #[cfg_attr(test, assert_instr(pmull))]
+pub unsafe fn vmull_high_p64(a: poly64x2_t, b: poly64x2_t) -> p128 {
+    // vmull_p64(simd_extract(a, 1), simd_extract(b, 1))
+    
+    let t1: poly64x1_t = vget_high_p64(a);
+    let t2: poly64x1_t = vget_high_p64(b);
+    
+    vmull_p64(transmute(t1), transmute(t2))
+}
+
+
+
+#[inline]
+unsafe fn vreinterpretq_u8_p128(a: poly128_t) -> uint8x16_t {
+    transmute(a)
+}
+
+// NOTE: 不同编译器的优化:
+// https://gist.github.com/LuoZijun/ffa7ec2487c4debd50c44bba1434f410
+#[inline]
+unsafe fn vmull_low(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
+    // 0x00
+    let t1: poly64x1_t = vget_low_p64(vreinterpretq_p64_u64(vreinterpretq_u64_u8(a)));
+    let t2: poly64x1_t = vget_low_p64(vreinterpretq_p64_u64(vreinterpretq_u64_u8(b)));
+
+    let r: poly128_t = vmull_p64(transmute(t1), transmute(t2));
+
+    return vreinterpretq_u8_p128(r);
+}
+
+#[inline]
+unsafe fn vmull_high(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
+    // 0x11
+    let t1: poly64x2_t = vreinterpretq_p64_u64(vreinterpretq_u64_u8(a));
+    let t2: poly64x2_t = vreinterpretq_p64_u64(vreinterpretq_u64_u8(b));
+
+    let r: poly128_t = vmull_high_p64(t1, t2);
+
+    return vreinterpretq_u8_p128(r);
+}
+
+#[inline]
+unsafe fn vmull_low_high(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
+    // 0x10
+    let t1: poly64x1_t = vget_low_p64(vreinterpretq_p64_u64(vreinterpretq_u64_u8(a)));
+    let t2: poly64x1_t = vget_high_p64(vreinterpretq_p64_u64(vreinterpretq_u64_u8(b)));
+
+    let r: poly128_t = vmull_p64(transmute(t1), transmute(t2));
+
+    return vreinterpretq_u8_p128(r);
+}
+
+#[inline]
+unsafe fn vmull_high_low(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
+    // 0x01
+    let t1: poly64x1_t = vget_high_p64(vreinterpretq_p64_u64(vreinterpretq_u64_u8(a)));
+    let t2: poly64x1_t = vget_low_p64(vreinterpretq_p64_u64(vreinterpretq_u64_u8(b)));
+
+    let r: poly128_t = vmull_p64(transmute(t1), transmute(t2));
+
+    return vreinterpretq_u8_p128(r);
+}
+
 
 #[derive(Clone)]
 pub struct Polyval {
@@ -58,25 +116,28 @@ impl Polyval {
         unsafe {
             let mask: uint8x16_t = transmute([1u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 194]);
 
-            let a = veorq_u8(self.h, *(block.as_ptr() as *const uint8x16_t));
+            let a = veorq_u8(self.h, vld1q_u8(block.as_ptr()));
             let b = self.key;
 
-            let mut tmp1 = _mm_clmulepi64_si128(a, b, 0x00);
-            let mut tmp4 = _mm_clmulepi64_si128(a, b, 0x11);
-            let mut tmp2 = _mm_clmulepi64_si128(a, b, 0x10);
-            let mut tmp3 = _mm_clmulepi64_si128(a, b, 0x01);
-
+            let mut tmp1 = vmull_low(a, b);      // 0x00
+            let mut tmp4 = vmull_high(a, b);     // 0x11
+            let mut tmp2 = vmull_low_high(a, b); // 0x10
+            let mut tmp3 = vmull_high_low(a, b); // 0x01
 
             tmp2 = veorq_u8(tmp2, tmp3);
-            tmp3 = transmute::<u128, uint8x16_t>(transmute::<uint8x16_t, u128>(tmp2) << 64);
-            // vgetq_lane_u64(vreinterpretq_u64_u8(a), 1)
-
-            tmp2 = transmute::<u128, uint8x16_t>(transmute::<uint8x16_t, u128>(tmp2) >> 64);
+            // tmp3 = transmute::<u128, uint8x16_t>(transmute::<uint8x16_t, u128>(tmp2) << 64);
+            tmp3 = vreinterpretq_u8_u64(transmute([0, vgetq_lane_u64::<0>(vreinterpretq_u64_u8(tmp2))]));
+            
+            // tmp2 = transmute::<u128, uint8x16_t>(transmute::<uint8x16_t, u128>(tmp2) >> 64);
+            tmp2 = vreinterpretq_u8_u64(transmute([
+                vgetq_lane_u64::<1>(vreinterpretq_u64_u8(tmp2)),
+                0, 
+            ]));
 
             tmp1 = veorq_u8(tmp3, tmp1);
             tmp4 = veorq_u8(tmp4, tmp2);
 
-            tmp2 = _mm_clmulepi64_si128(tmp1, mask, 0x10);
+            tmp2 = vmull_low_high(tmp1, mask); // 0x10
 
             // 0b 01 00 11 10
             //    1   0  3  2
@@ -88,7 +149,7 @@ impl Polyval {
             
             tmp1 = veorq_u8(tmp3, tmp2);
             
-            tmp2 = _mm_clmulepi64_si128(tmp1, mask, 0x10);
+            tmp2 = vmull_low_high(tmp1, mask); // 0x10
 
             {
                 let [t0, t1, t2, t3]: [u32; 4] = transmute(tmp1);
@@ -119,6 +180,7 @@ impl Polyval {
 
     pub fn finalize(self) -> [u8; Self::TAG_LEN] {
         unsafe {
+            // vst1q_u8()
             transmute(self.h)
         }
     }
