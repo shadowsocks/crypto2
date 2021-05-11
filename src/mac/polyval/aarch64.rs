@@ -118,17 +118,20 @@ impl Polyval {
 
             let a = veorq_u8(self.h, vld1q_u8(block.as_ptr()));
             let b = self.key;
-
+            
             let mut tmp1 = vmull_low(a, b);      // 0x00
             let mut tmp4 = vmull_high(a, b);     // 0x11
             let mut tmp2 = vmull_low_high(a, b); // 0x10
             let mut tmp3 = vmull_high_low(a, b); // 0x01
-
+            
             tmp2 = veorq_u8(tmp2, tmp3);
-            // tmp3 = transmute::<u128, uint8x16_t>(transmute::<uint8x16_t, u128>(tmp2) << 64);
+            
+            // NOTE: 
+            //   等价于: tmp3 = transmute::<u128, uint8x16_t>(transmute::<uint8x16_t, u128>(tmp2) << 64);
             tmp3 = vreinterpretq_u8_u64(transmute([0, vgetq_lane_u64::<0>(vreinterpretq_u64_u8(tmp2))]));
             
-            // tmp2 = transmute::<u128, uint8x16_t>(transmute::<uint8x16_t, u128>(tmp2) >> 64);
+            // NOTE: 
+            //   等价于: tmp2 = transmute::<u128, uint8x16_t>(transmute::<uint8x16_t, u128>(tmp2) >> 64);
             tmp2 = vreinterpretq_u8_u64(transmute([
                 vgetq_lane_u64::<1>(vreinterpretq_u64_u8(tmp2)),
                 0, 
@@ -136,25 +139,36 @@ impl Polyval {
 
             tmp1 = veorq_u8(tmp3, tmp1);
             tmp4 = veorq_u8(tmp4, tmp2);
-
             tmp2 = vmull_low_high(tmp1, mask); // 0x10
 
-            // 0b 01 00 11 10
-            //    1   0  3  2
-            // tmp3 = _mm_shuffle_epi32(tmp1, 78);
-            {
-                let [t0, t1, t2, t3] = transmute::<uint8x16_t, [u32; 4]>(tmp1);
-                tmp3 = transmute([t2, t3, t0, t1]);
-            }
-            
+            // NOTE: 相当于 X86 里面的 _mm_shuffle_epi32(tmp1, 78) 指令。
+            // 
+            //       0b 01 00 11 10
+            //          1   0  3  2
+            //       等价于:
+            //           let [t0, t1, t2, t3] = transmute::<uint8x16_t, [u32; 4]>(tmp1);
+            //           tmp3 = transmute([t2, t3, t0, t1]);
+            tmp3 = vreinterpretq_u8_u32(vcombine_u32(
+                vget_high_u32(vreinterpretq_u32_u8(tmp1)),
+                vget_low_u32(vreinterpretq_u32_u8(tmp1)),
+            ));
+
+
             tmp1 = veorq_u8(tmp3, tmp2);
             
             tmp2 = vmull_low_high(tmp1, mask); // 0x10
 
-            {
-                let [t0, t1, t2, t3]: [u32; 4] = transmute(tmp1);
-                tmp3 = transmute([t2, t3, t0, t1]);
-            }
+            // NOTE: 相当于 X86 里面的 _mm_shuffle_epi32(tmp1, 78) 指令。
+            // 
+            //       0b 01 00 11 10
+            //          1   0  3  2
+            //       等价于:
+            //           let [t0, t1, t2, t3] = transmute::<uint8x16_t, [u32; 4]>(tmp1);
+            //           tmp3 = transmute([t2, t3, t0, t1]);
+            tmp3 = vreinterpretq_u8_u32(vcombine_u32(
+                vget_high_u32(vreinterpretq_u32_u8(tmp1)),
+                vget_low_u32(vreinterpretq_u32_u8(tmp1)),
+            ));
 
             tmp1 = veorq_u8(tmp3, tmp2);
             
