@@ -12,9 +12,6 @@ mod platform;
 #[cfg(all(target_arch = "aarch64", target_feature = "crypto"))]
 #[path = "./aarch64.rs"]
 mod platform;
-#[cfg(all(target_arch = "aarch64", target_feature = "crypto"))]
-#[allow(dead_code)]
-mod generic;
 
 
 #[cfg(not(any(

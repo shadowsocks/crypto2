@@ -1,3 +1,4 @@
+#![allow(non_camel_case_types)]
 #[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;
 use core::mem::transmute;
