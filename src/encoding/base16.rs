@@ -25,6 +25,7 @@ static HEXDIGITS_LOWERCASE: [u8; 16] = [
     0x38, 0x39, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 ];
 
+// Invalid base16 characters
 const ____: u8 = 0xff;
 
 // NOTE: 大小写不敏感

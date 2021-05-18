@@ -48,8 +48,7 @@ static URL_SAFE_TABLE: [u8; 32] = [
     0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56,
 ];
 
-// Invalid base64 characters
-// const ____: u8 = 0x00;
+// Invalid base32 characters
 const ____: u8 = 0xff;
 const _EXT: u8 = 0xfe; // PADDED.
 
@@ -716,7 +715,7 @@ fn bench_decode_slice(b: &mut test::Bencher) {
 #[bench]
 fn bench_encode(b: &mut test::Bencher) {
     let input = b"foobar";
-    
+
     b.iter(|| {
         encode(input)
     })
