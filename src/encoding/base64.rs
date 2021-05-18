@@ -129,22 +129,21 @@ static STANDARD_DECODE_TABLE: [u8; 256] = [
 
 
 
-
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum ErrorKind {
     InvalidCodedCharacter,
     InvalidPaddingCharacter,
     InvalidPaddingLength,
-    TrailingSixBits,
+    // TrailingSixBits,
     TrailingUnPaddedBits,
+    TrailingNonZeroBits,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Error {
-    pos: usize,
-    byte: u8,
-    kind: ErrorKind,
+    pub(crate) pos: usize,
+    pub(crate) byte: u8,
+    pub(crate) kind: ErrorKind,
 }
 
 impl core::fmt::Display for Error {
@@ -166,8 +165,42 @@ impl core::fmt::Display for Error {
 impl std::error::Error for Error { }
 
 
+#[derive(Debug, Copy, Clone)]
+pub struct Config {
+    // NOTE: 编码时无需填充码文; 译码时允许忽略填充码文以及不正确的填充长度。
+    pub no_padding: bool,
+    pub allow_trailing_non_zero_bits: bool,
+}
+
+pub const DEFAULT_CONFIG: Config = Config { no_padding: false, allow_trailing_non_zero_bits: false };
+
+
 #[inline]
-pub fn decode_buffer_len(ilen: usize) -> usize {
+fn encode_buffer_len(ilen: usize, config: Config) -> usize {
+    // Groups Len ( 6 * 3 = 24-bits )
+    let n = ilen / 3;
+    let r = ilen % 3;
+
+    // NO-PAD
+    if config.no_padding {
+        match r {
+            0 => n * 4,
+            1 => n * 4 + 2,
+            2 => n * 4 + 3,
+            _ => unreachable!(),
+        }
+    } else {
+        // PAD
+        if r > 0 {
+            n * 4 + 4
+        } else {
+            n * 4
+        }
+    }
+}
+
+#[inline]
+fn decode_buffer_len(ilen: usize) -> usize {
     let n = ilen / 4;
     let r = ilen % 4;
     
@@ -176,27 +209,152 @@ pub fn decode_buffer_len(ilen: usize) -> usize {
     olen
 }
 
+
+pub fn encode<D: AsRef<[u8]>>(input: D) -> String {
+    encode_with_config(input, DEFAULT_CONFIG)
+}
+pub fn encode_with_config<D: AsRef<[u8]>>(input: D, config: Config) -> String {
+    let input = input.as_ref();
+    if input.is_empty() {
+        return String::new();
+    }
+
+    let ilen = input.len();
+    let olen = encode_buffer_len(ilen, config);
+
+    let mut output = vec![0u8; olen];
+    
+    let amt = encode_to_slice_with_config(input, &mut output, config);
+    output.truncate(amt);
+
+    unsafe { String::from_utf8_unchecked(output) }
+}
+
+pub fn urlsafe_encode<D: AsRef<[u8]>>(input: D) -> String {
+    urlsafe_encode_with_config(input, DEFAULT_CONFIG)
+}
+pub fn urlsafe_encode_with_config<D: AsRef<[u8]>>(input: D, config: Config) -> String {
+    let input = input.as_ref();
+    if input.is_empty() {
+        return String::new();
+    }
+
+    let ilen = input.len();
+    let olen = encode_buffer_len(ilen, config);
+
+    let mut output = vec![0u8; olen];
+
+    let amt = urlsafe_encode_to_slice_with_config(input, &mut output, config);
+    output.truncate(amt);
+
+    unsafe { String::from_utf8_unchecked(output) }
+}
+
 #[inline]
-pub fn encode_buffer_len(ilen: usize) -> usize {
+pub fn encode_to_slice<D: AsRef<[u8]>, W: AsMut<[u8]>>(input: D, output: &mut W) -> usize {
+    encode_to_slice_with_config(input, output, DEFAULT_CONFIG)
+}
+#[inline]
+pub fn encode_to_slice_with_config<D: AsRef<[u8]>, W: AsMut<[u8]>>(input: D, output: &mut W, config: Config) -> usize {
+    encode_to_slice_inner(&STANDARD_TABLE, input, output, config)
+}
+
+#[inline]
+pub fn urlsafe_encode_to_slice<D: AsRef<[u8]>, W: AsMut<[u8]>>(input: D, output: &mut W) -> usize {
+    urlsafe_encode_to_slice_with_config(input, output, DEFAULT_CONFIG)
+
+}
+#[inline]
+pub fn urlsafe_encode_to_slice_with_config<D: AsRef<[u8]>, W: AsMut<[u8]>>(input: D, output: &mut W, config: Config) -> usize {
+    encode_to_slice_inner(&URL_SAFE_TABLE, input, output, config)
+}
+
+#[inline]
+fn encode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 64], input: R, output: &mut W, config: Config) -> usize {
+    let input  = input.as_ref();
+    let output = output.as_mut();
+
+    let ilen = input.len();
+
     // Groups Len ( 6 * 3 = 24-bits )
     let n = ilen / 3;
     let r = ilen % 3;
 
-    // NO-PAD
-    // let olen = match r {
-    //     0 => n * 4,
-    //     1 => n * 4 + 2,
-    //     2 => n * 4 + 3,
-    //     _ => unreachable!(),
-    // };
+    let mut ipos = 0usize;
+    let mut opos = 0usize;
 
-    // PAD
-    let olen = if r > 0 { n * 4 + 4 } else { n * 4 };
+    while ipos < n * 3 {
+        let group = u32::from_be_bytes([
+            input[ipos + 0], 
+            input[ipos + 1], 
+            input[ipos + 2], 
+            0, 
+        ]);
 
-    olen
+        output[opos + 0] = table[((group >> 26) & 0x3F) as usize];
+        output[opos + 1] = table[((group >> 20) & 0x3F) as usize];
+        output[opos + 2] = table[((group >> 14) & 0x3F) as usize];
+        output[opos + 3] = table[((group >>  8) & 0x3F) as usize];
+
+        ipos += 3;
+        opos += 4;
+    }
+
+    // Last bytes ( 1 or 2 bytes )
+    match r {
+        0 => { },
+        1 => {
+            let group = u32::from_be_bytes([
+                input[ipos + 0], 
+                0, 
+                0,
+                0,
+            ]);
+
+            output[opos + 0] = table[((group >> 26) & 0x3F) as usize];
+            output[opos + 1] = table[((group >> 20) & 0x3F) as usize];
+
+            if config.no_padding {
+                opos += 2;
+            } else {
+                // PAD-LEN: 2
+                output[opos + 2] = b'=';
+                output[opos + 3] = b'=';
+                opos += 4;
+            }
+        },
+        2 => {
+            let group = u32::from_be_bytes([
+                input[ipos + 0], 
+                input[ipos + 1], 
+                0,
+                0,
+            ]);
+
+            output[opos + 0] = table[((group >> 26) & 0x3F) as usize];
+            output[opos + 1] = table[((group >> 20) & 0x3F) as usize];
+            output[opos + 2] = table[((group >> 14) & 0x3F) as usize];
+
+            if config.no_padding {
+                opos += 3;
+            } else {
+                // PAD-LEN: 1
+                output[opos + 3] = b'=';
+                opos += 4;
+            }
+        },
+        _ => unreachable!(),
+    }
+
+    opos
 }
 
+
+
 pub fn decode<D: AsRef<[u8]>>(input: D) -> Result<Vec<u8>, Error> {
+    decode_with_config(input, DEFAULT_CONFIG)
+}
+pub fn decode_with_config<D: AsRef<[u8]>>(input: D, config: Config) -> Result<Vec<u8>, Error> {
     let input = input.as_ref();
     if input.is_empty() {
         return Ok(Vec::new());
@@ -207,7 +365,7 @@ pub fn decode<D: AsRef<[u8]>>(input: D) -> Result<Vec<u8>, Error> {
 
     let mut output = vec![0u8; olen];
 
-    let amt = decode_to_slice(input, &mut output)?;
+    let amt = decode_to_slice_with_config(input, &mut output, config)?;
     if amt < olen {
         output.truncate(amt);
     }
@@ -216,6 +374,9 @@ pub fn decode<D: AsRef<[u8]>>(input: D) -> Result<Vec<u8>, Error> {
 }
 
 pub fn urlsafe_decode<D: AsRef<[u8]>>(input: D) -> Result<Vec<u8>, Error> {
+    urlsafe_decode_with_config(input, DEFAULT_CONFIG)
+}
+pub fn urlsafe_decode_with_config<D: AsRef<[u8]>>(input: D, config: Config) -> Result<Vec<u8>, Error> {
     let input = input.as_ref();
     if input.is_empty() {
         return Ok(Vec::new());
@@ -226,7 +387,7 @@ pub fn urlsafe_decode<D: AsRef<[u8]>>(input: D) -> Result<Vec<u8>, Error> {
 
     let mut output = vec![0u8; olen];
 
-    let amt = urlsafe_decode_to_slice(input, &mut output)?;
+    let amt = urlsafe_decode_to_slice_with_config(input, &mut output, config)?;
     if amt < olen {
         output.truncate(amt);
     }
@@ -236,16 +397,24 @@ pub fn urlsafe_decode<D: AsRef<[u8]>>(input: D) -> Result<Vec<u8>, Error> {
 
 #[inline]
 pub fn decode_to_slice<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &mut W) -> Result<usize, Error> {
-    decode_to_slice_inner(&STANDARD_DECODE_TABLE, input, output)
+    decode_to_slice_with_config(input, output, DEFAULT_CONFIG)
+}
+#[inline]
+pub fn decode_to_slice_with_config<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &mut W, config: Config) -> Result<usize, Error> {
+    decode_to_slice_inner(&STANDARD_DECODE_TABLE, input, output, config)
 }
 
 #[inline]
 pub fn urlsafe_decode_to_slice<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &mut W) -> Result<usize, Error> {
-    decode_to_slice_inner(&URL_SAFE_DECODE_TABLE, input, output)
+    urlsafe_decode_to_slice_with_config(input, output, DEFAULT_CONFIG)
+}
+#[inline]
+pub fn urlsafe_decode_to_slice_with_config<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &mut W, config: Config) -> Result<usize, Error> {
+    decode_to_slice_inner(&URL_SAFE_DECODE_TABLE, input, output, config)
 }
 
 #[inline]
-fn decode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 256], input: R, output: &mut W) -> Result<usize, Error> {
+fn decode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 256], input: R, output: &mut W, config: Config) -> Result<usize, Error> {
     let input  = input.as_ref();
     let output = output.as_mut();
 
@@ -272,40 +441,24 @@ fn decode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 256], inpu
             },
             _EXT => {
                 // DECODE-PADDING DATA
-                const MAX_PADDING_LEN: usize = 2;
-
                 plen  = 1;
                 ipos += 1;
 
-                while ipos < ilen {
+                if ipos < ilen {
                     let val = table[input[ipos] as usize];
-                    // NOTE: 确保 PADDING-CHARACTER 为 字符 `=`，
-                    //       以及确保 PADDING-LEN 没有超出最大值。
-                    if val != _EXT || plen >= MAX_PADDING_LEN {
+                    if val != _EXT {
                         return Err(Error {
                             pos: ipos,
                             byte: input[ipos],
-                            kind: if val != _EXT {
-                                ErrorKind::InvalidPaddingCharacter
-                            } else {
-                                ErrorKind::InvalidPaddingLength
-                            },
+                            kind: ErrorKind::InvalidPaddingCharacter,
                         });
                     }
 
+                    plen  = 2;
                     ipos += 1;
-                    plen += 1;
                 }
 
-                // NOTE: 经过 PADDING 后的 input 数据，长度应为 4 的倍数。
-                if ilen % 4 > 0 {
-                    return Err(Error {
-                        pos: ipos,
-                        byte: input[ipos - 1],
-                        kind: ErrorKind::InvalidPaddingLength,
-                    });
-                }
-
+                // NOTE: 忽略后续的字符，即便它不是合法的填充字符 `=`。
                 break;
             },
             _ => {
@@ -348,13 +501,12 @@ fn decode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 256], inpu
         },
         6 => {
             // Last 6-bits was droped.
-            let [b1, _, _, _] = group.to_be_bytes();
-
+            // NOTE: 发生这种情况，一般是数据被截断了。
             ipos -= 1;
             return Err(Error {
                 pos: ipos,
                 byte: input[ipos],
-                kind: ErrorKind::TrailingSixBits,
+                kind: ErrorKind::InvalidPaddingLength,
             });
         },
         12 => {
@@ -365,12 +517,25 @@ fn decode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 256], inpu
 
             opos += 1;
 
-            if plen != 2 {
+            if !config.no_padding {
+                // NOTE: 检查 PADDING 长度.
+                if plen != 2 {
+                    ipos -= 1;
+                    return Err(Error {
+                        pos: ipos,
+                        byte: input[ipos],
+                        kind: ErrorKind::InvalidPaddingLength,
+                    });
+                }
+            }
+
+            if !config.allow_trailing_non_zero_bits && (b2 << 4) > 0 {
+                // NOTE: 不允许直接忽略尾随的 NonZero bits.
                 ipos -= 1;
                 return Err(Error {
                     pos: ipos,
                     byte: input[ipos],
-                    kind: ErrorKind::TrailingUnPaddedBits,
+                    kind: ErrorKind::TrailingNonZeroBits,
                 });
             }
         },
@@ -383,12 +548,25 @@ fn decode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 256], inpu
 
             opos += 2;
 
-            if plen != 1 {
+            if !config.no_padding {
+                // NOTE: 检查 PADDING 长度.
+                if plen != 1 {
+                    ipos -= 1;
+                    return Err(Error {
+                        pos: ipos,
+                        byte: input[ipos],
+                        kind: ErrorKind::InvalidPaddingLength,
+                    });
+                }
+            }
+            
+            if !config.allow_trailing_non_zero_bits && (b3 << 2) > 0 {
+                // NOTE: 不允许直接忽略尾随的 NonZero bits.
                 ipos -= 1;
                 return Err(Error {
                     pos: ipos,
                     byte: input[ipos],
-                    kind: ErrorKind::TrailingUnPaddedBits,
+                    kind: ErrorKind::TrailingNonZeroBits,
                 });
             }
         },
@@ -396,115 +574,6 @@ fn decode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 256], inpu
     }
 
     Ok(opos)
-}
-
-
-
-pub fn encode<D: AsRef<[u8]>>(input: D) -> String {
-    let input = input.as_ref();
-    if input.is_empty() {
-        return String::new();
-    }
-
-    let ilen = input.len();
-    let olen = encode_buffer_len(ilen);
-
-    let mut output = vec![b'='; olen];
-
-    encode_to_slice(input, &mut output);
-
-    unsafe { String::from_utf8_unchecked(output) }
-}
-
-pub fn urlsafe_encode<D: AsRef<[u8]>>(input: D) -> String {
-    let input = input.as_ref();
-    if input.is_empty() {
-        return String::new();
-    }
-
-    let ilen = input.len();
-    let olen = encode_buffer_len(ilen);
-
-    let mut output = vec![b'='; olen];
-
-    urlsafe_encode_to_slice(input, &mut output);
-
-    unsafe { String::from_utf8_unchecked(output) }
-}
-
-#[inline]
-pub fn encode_to_slice<D: AsRef<[u8]>, W: AsMut<[u8]>>(input: D, output: &mut W) {
-    encode_to_slice_inner(&STANDARD_TABLE, input, output);
-}
-
-#[inline]
-pub fn urlsafe_encode_to_slice<D: AsRef<[u8]>, W: AsMut<[u8]>>(input: D, output: &mut W) {
-    encode_to_slice_inner(&URL_SAFE_TABLE, input, output);
-}
-
-#[inline]
-fn encode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 64], input: R, output: &mut W) {
-    let input  = input.as_ref();
-    let output = output.as_mut();
-
-    let ilen = input.len();
-
-    // Groups Len ( 6 * 3 = 24-bits )
-    let n = ilen / 3;
-    let r = ilen % 3;
-
-    let mut i = 0usize;
-    while i < n {
-        let num = u32::from_be_bytes([
-            input[i * 3 + 0], 
-            input[i * 3 + 1], 
-            input[i * 3 + 2], 
-            0,
-        ]);
-
-        output[i * 4 + 0] = table[((num >> 26) & 0x3F) as usize];
-        output[i * 4 + 1] = table[((num >> 20) & 0x3F) as usize];
-        output[i * 4 + 2] = table[((num >> 14) & 0x3F) as usize];
-        output[i * 4 + 3] = table[((num >>  8) & 0x3F) as usize];
-
-        i += 1;
-    }
-
-    // Last bytes ( 1 or 2 bytes )
-    match r {
-        0 => { },
-        1 => {
-            let num = u32::from_be_bytes([
-                input[i * 3 + 0], 
-                0, 
-                0,
-                0,
-            ]);
-
-            output[i * 4 + 0] = table[((num >> 26) & 0x3F) as usize];
-            output[i * 4 + 1] = table[((num >> 20) & 0x3F) as usize];
-
-            // PAD-LEN: 2
-            // output[i * 4 + 2] = b'=';
-            // output[i * 4 + 3] = b'=';
-        },
-        2 => {
-            let num = u32::from_be_bytes([
-                input[i * 3 + 0], 
-                input[i * 3 + 1], 
-                0,
-                0,
-            ]);
-
-            output[i * 4 + 0] = table[((num >> 26) & 0x3F) as usize];
-            output[i * 4 + 1] = table[((num >> 20) & 0x3F) as usize];
-            output[i * 4 + 2] = table[((num >> 14) & 0x3F) as usize];
-
-            // PAD-LEN: 1
-            // output[i * 4 + 3] = b'=';
-        },
-        _ => unreachable!(),
-    }
 }
 
 
@@ -519,7 +588,6 @@ fn encode_to_slice_inner<R: AsRef<[u8]>, W: AsMut<[u8]>>(table: &[u8; 64], input
 // const FF: u8    = 0x0c; // 12
 // const CR: u8    = 0x0d; // 13 \r
 // const SPACE: u8 = 0x20; // 32
-
 const SKIP: u8 = 0xfd;
 const PADB: u8 = 0x3d; // b'='
 static FORGIVING_TABLE_INV: [u8; 256] = [
@@ -571,7 +639,7 @@ pub fn forgiving_decode<R: AsRef<[u8]>>(input: R) -> Result<Vec<u8>, Error> {
 }
 
 #[inline]
-fn forgiving_decode_to_slice<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &mut W) -> Result<usize, Error> {
+pub fn forgiving_decode_to_slice<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &mut W) -> Result<usize, Error> {
     let input  = input.as_ref();
     let output = output.as_mut();
 
@@ -688,13 +756,14 @@ fn forgiving_decode_to_slice<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &
         },
         6 => {
             // Last 6-bits was droped.
+            // NOTE: 在输入为 Byte 数据流的情况下，剩下 6-bits 的情况永远不会发生。
             unreachable!()
         },
         12 => {
             // Last 4-bits was droped.
             // 
             // If it contains 12 bits, then discard the last four and interpret the remaining eight as an 8-bit big-endian number.
-            let [b1, b2, _, _] = group.to_be_bytes();
+            let [b1, _, _, _] = group.to_be_bytes();
             
             output[opos + 0] = b1;
 
@@ -704,7 +773,7 @@ fn forgiving_decode_to_slice<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &
             // Last 2-bits was droped.
             // 
             // If it contains 18 bits, then discard the last two and interpret the remaining 16 as two 8-bit big-endian numbers.
-            let [b1, b2, b3, _] = group.to_be_bytes();
+            let [b1, b2, _, _] = group.to_be_bytes();
 
             output[opos + 0] = b1;
             output[opos + 1] = b2;
@@ -716,6 +785,7 @@ fn forgiving_decode_to_slice<R: AsRef<[u8]>, W: AsMut<[u8]>>(input: R, output: &
 
     Ok(opos)
 }
+
 
 #[test]
 fn test_base64() {
@@ -791,7 +861,7 @@ fn test_forgiving_decode() {
 fn bench_encode(b: &mut test::Bencher) {
     let input = b"fooba";
     let ilen = input.len();
-    let olen = encode_buffer_len(ilen);
+    let olen = encode_buffer_len(ilen, DEFAULT_CONFIG);
 
     let mut output = vec![b'='; olen];
 
@@ -814,42 +884,35 @@ fn bench_decode(b: &mut test::Bencher) {
     })
 }
 
-// Result:
-// 
-// test base64::bench_crate_decode     ... bench:          31 ns/iter (+/- 5)
-// test base64::bench_crate_encode     ... bench:          14 ns/iter (+/- 1)
-// test base64::bench_decode           ... bench:           7 ns/iter (+/- 2)
-// test base64::bench_encode           ... bench:           4 ns/iter (+/- 0)
-// 
-// so fast :)
 
+#[cfg(test)]
+#[bench]
+fn bench_crate_encode(b: &mut test::Bencher) {
+    use base64 as base64_raw;
 
-// #[bench]
-// fn bench_crate_encode(b: &mut test::Bencher) {
-//     use base64 as base64_raw;
+    let input = b"fooba";
+    let ilen = input.len();
+    let olen = encode_buffer_len(ilen, DEFAULT_CONFIG);
 
-//     let input = b"fooba";
-//     let ilen = input.len();
-//     let olen = encode_buffer_len(ilen);
+    let mut output = vec![b'='; olen];
 
-//     let mut output = vec![b'='; olen];
+    b.iter(|| {
+        base64_raw::encode_config_slice(input, base64_raw::STANDARD, &mut output)
+    })
+}
 
-//     b.iter(|| {
-//         base64_raw::encode_config_slice(input, base64_raw::STANDARD, &mut output)
-//     })
-// }
+#[cfg(test)]
+#[bench]
+fn bench_crate_decode(b: &mut test::Bencher) {
+    use base64 as base64_raw;
 
-// #[bench]
-// fn bench_crate_decode(b: &mut test::Bencher) {
-//     use base64 as base64_raw;
+    let input = b"Zm9vYmE=";
+    let ilen = input.len();
+    let olen = decode_buffer_len(ilen);
 
-//     let input = b"Zm9vYmE=";
-//     let ilen = input.len();
-//     let olen = decode_buffer_len(ilen);
+    let mut output = vec![0u8; olen];
 
-//     let mut output = vec![0u8; olen];
-
-//     b.iter(|| {
-//         base64_raw::decode_config_slice(input, base64_raw::STANDARD, &mut output).unwrap()
-//     })
-// }
+    b.iter(|| {
+        base64_raw::decode_config_slice(input, base64_raw::STANDARD, &mut output).unwrap()
+    })
+}

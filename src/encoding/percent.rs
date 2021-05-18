@@ -10,9 +10,7 @@
 // 
 // reserved    = gen-delims / sub-delims
 // unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
-
-use super::base16::____;
-use super::base16::HEX_DECODE_TABLE;
+use super::base16::from_hexdigits;
 
 
 static TABLE: [&[u8]; 256] = [
@@ -112,17 +110,15 @@ pub fn decode<T: AsRef<[u8]>>(input: T) -> Result<String, Error> {
                 });
             }
 
-            let hi = HEX_DECODE_TABLE[input[i + 1] as usize];
-            let lo = HEX_DECODE_TABLE[input[i + 2] as usize];
-            if hi == ____ || lo == ____ {
-                return Err(Error {
+            let val = from_hexdigits(input[i], input[i + 1]).map_err(|_| {
+                Error {
                     pos: i,
                     byte: ch,
                     kind: ErrorKind::InvalidHexDigit,
-                })
-            }
+                }
+            })?;
 
-            output.push((hi << 4) | lo);
+            output.push(val);
 
             i += 3;
         } else {
