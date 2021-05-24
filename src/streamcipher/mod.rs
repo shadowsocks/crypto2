@@ -33,6 +33,9 @@ pub use self::rc4::*;
 pub use self::chacha20::*;
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 
 #[cfg(test)]
 #[bench]

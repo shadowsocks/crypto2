@@ -306,6 +306,10 @@ impl Rc2 {
 }
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_rc2() {
     // 5. Test vectors

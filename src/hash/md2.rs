@@ -115,6 +115,10 @@ impl Md2 {
 }
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_md2() {
     // A.5 Test suite

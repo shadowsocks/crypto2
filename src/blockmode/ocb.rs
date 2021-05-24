@@ -378,6 +378,9 @@ impl_block_cipher_with_ocb_mode!(Aes256OcbTag96,  Aes256, 12); // TAG-LEN=12
 impl_block_cipher_with_ocb_mode!(Aes256OcbTag64,  Aes256, 8);  // TAG-LEN=8
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 
 #[test]
 fn test_aes128_ocb_tag128_dec() {

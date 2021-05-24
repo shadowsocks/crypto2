@@ -145,21 +145,21 @@ pub fn decode<T: AsRef<[u8]>>(input: T) -> Result<String, Error> {
 }
 
 
-#[cfg(test)]
-#[bench]
-fn bench_encode(b: &mut test::Bencher) {
-    b.iter(|| {
-        encode("foobar==/~")
-    })
-}
+// #[cfg(test)]
+// #[bench]
+// fn bench_encode(b: &mut test::Bencher) {
+//     b.iter(|| {
+//         encode("foobar==/~")
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_crate_io_percent_encode(b: &mut test::Bencher) {
-    use percent_encoding::NON_ALPHANUMERIC;
-    use percent_encoding::utf8_percent_encode;
+// #[cfg(test)]
+// #[bench]
+// fn bench_crate_io_percent_encode(b: &mut test::Bencher) {
+//     use percent_encoding::NON_ALPHANUMERIC;
+//     use percent_encoding::utf8_percent_encode;
 
-    b.iter(|| {
-        utf8_percent_encode("foobar==/~", NON_ALPHANUMERIC).to_string()
-    })
-}
+//     b.iter(|| {
+//         utf8_percent_encode("foobar==/~", NON_ALPHANUMERIC).to_string()
+//     })
+// }

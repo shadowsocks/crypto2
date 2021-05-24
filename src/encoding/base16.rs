@@ -22,7 +22,7 @@ static HEXDIGITS_LOWERCASE: [u8; 16] = [
 //     0     1     2     3     4     5     6     7
     0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 
 //     8     9     a     b     c     d     e     f
-    0x38, 0x39, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+    0x38, 0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
 ];
 
 // Invalid base16 characters
@@ -266,6 +266,15 @@ fn test_base16() {
     assert_eq!(encode("fooba"), "666F6F6261");
     assert_eq!(encode("foobar"), "666F6F626172");
 
+    assert_eq!(encode_lowercase(""), "".to_lowercase());
+    assert_eq!(encode_lowercase("f"), "66".to_lowercase());
+    assert_eq!(encode_lowercase("fo"), "666F".to_lowercase());
+    assert_eq!(encode_lowercase("foo"), "666F6F".to_lowercase());
+    assert_eq!(encode_lowercase("foob"), "666F6F62".to_lowercase());
+    assert_eq!(encode_lowercase("fooba"), "666F6F6261".to_lowercase());
+    assert_eq!(encode_lowercase("foobar"), "666F6F626172".to_lowercase());
+
+
     assert_eq!(decode("").unwrap(), b"");
     assert_eq!(decode("66").unwrap(), b"f");
     assert_eq!(decode("666F").unwrap(), b"fo");
@@ -279,42 +288,42 @@ fn test_base16() {
     assert_eq!(decode("666f6f626172").unwrap(), b"foobar");
 }
 
-#[cfg(test)]
-#[bench]
-fn bench_encode(b: &mut test::Bencher) {
-    let s = "abcdefg";
-    let mut output = [0u8; 14];
-    b.iter(|| {
-        encode_to_slice_uppercase(s, &mut output)
-    })
-}
+// #[cfg(test)]
+// #[bench]
+// fn bench_encode(b: &mut test::Bencher) {
+//     let s = "abcdefg";
+//     let mut output = [0u8; 14];
+//     b.iter(|| {
+//         encode_to_slice_uppercase(s, &mut output)
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_decode(b: &mut test::Bencher) {
-    let s = "666F6F626172";
-    let mut output = [0u8; 6];
-    b.iter(|| {
-        decode_to_slice(s, &mut output).unwrap()
-    })
-}
+// #[cfg(test)]
+// #[bench]
+// fn bench_decode(b: &mut test::Bencher) {
+//     let s = "666F6F626172";
+//     let mut output = [0u8; 6];
+//     b.iter(|| {
+//         decode_to_slice(s, &mut output).unwrap()
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_crate_io_hex_encode(b: &mut test::Bencher) {
-    let s = "abcdefg";
-    let mut output = [0u8; 14];
-    b.iter(|| {
-        hex::encode_to_slice(s, &mut output).unwrap()
-    })
-}
+// #[cfg(test)]
+// #[bench]
+// fn bench_crate_io_hex_encode(b: &mut test::Bencher) {
+//     let s = "abcdefg";
+//     let mut output = [0u8; 14];
+//     b.iter(|| {
+//         hex::encode_to_slice(s, &mut output).unwrap()
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_crate_io_hex_decode(b: &mut test::Bencher) {
-    let s = "666F6F626172";
-    let mut output = [0u8; 6];
-    b.iter(|| {
-        hex::decode_to_slice(s, &mut output).unwrap()
-    })
-}
+// #[cfg(test)]
+// #[bench]
+// fn bench_crate_io_hex_decode(b: &mut test::Bencher) {
+//     let s = "666F6F626172";
+//     let mut output = [0u8; 6];
+//     b.iter(|| {
+//         hex::decode_to_slice(s, &mut output).unwrap()
+//     })
+// }

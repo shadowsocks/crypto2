@@ -856,63 +856,63 @@ fn test_forgiving_decode() {
     assert_eq!(std::str::from_utf8(&forgiving_decode("YR").unwrap()), Ok("a"));
 }
 
-#[cfg(test)]
-#[bench]
-fn bench_encode(b: &mut test::Bencher) {
-    let input = b"fooba";
-    let ilen = input.len();
-    let olen = encode_buffer_len(ilen, DEFAULT_CONFIG);
+// #[cfg(test)]
+// #[bench]
+// fn bench_encode(b: &mut test::Bencher) {
+//     let input = b"fooba";
+//     let ilen = input.len();
+//     let olen = encode_buffer_len(ilen, DEFAULT_CONFIG);
 
-    let mut output = vec![b'='; olen];
+//     let mut output = vec![b'='; olen];
 
-    b.iter(|| {
-        encode_to_slice(input, &mut output)
-    })
-}
+//     b.iter(|| {
+//         encode_to_slice(input, &mut output)
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_decode(b: &mut test::Bencher) {
-    let input = b"Zm9vYmE=";
-    let ilen = input.len();
-    let olen = decode_buffer_len(ilen);
+// #[cfg(test)]
+// #[bench]
+// fn bench_decode(b: &mut test::Bencher) {
+//     let input = b"Zm9vYmE=";
+//     let ilen = input.len();
+//     let olen = decode_buffer_len(ilen);
 
-    let mut output = vec![0u8; olen];
+//     let mut output = vec![0u8; olen];
 
-    b.iter(|| {
-        decode_to_slice(input, &mut output).unwrap()
-    })
-}
+//     b.iter(|| {
+//         decode_to_slice(input, &mut output).unwrap()
+//     })
+// }
 
 
-#[cfg(test)]
-#[bench]
-fn bench_crate_encode(b: &mut test::Bencher) {
-    use base64 as base64_raw;
+// #[cfg(test)]
+// #[bench]
+// fn bench_crate_encode(b: &mut test::Bencher) {
+//     use base64 as base64_raw;
 
-    let input = b"fooba";
-    let ilen = input.len();
-    let olen = encode_buffer_len(ilen, DEFAULT_CONFIG);
+//     let input = b"fooba";
+//     let ilen = input.len();
+//     let olen = encode_buffer_len(ilen, DEFAULT_CONFIG);
 
-    let mut output = vec![b'='; olen];
+//     let mut output = vec![b'='; olen];
 
-    b.iter(|| {
-        base64_raw::encode_config_slice(input, base64_raw::STANDARD, &mut output)
-    })
-}
+//     b.iter(|| {
+//         base64_raw::encode_config_slice(input, base64_raw::STANDARD, &mut output)
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_crate_decode(b: &mut test::Bencher) {
-    use base64 as base64_raw;
+// #[cfg(test)]
+// #[bench]
+// fn bench_crate_decode(b: &mut test::Bencher) {
+//     use base64 as base64_raw;
 
-    let input = b"Zm9vYmE=";
-    let ilen = input.len();
-    let olen = decode_buffer_len(ilen);
+//     let input = b"Zm9vYmE=";
+//     let ilen = input.len();
+//     let olen = decode_buffer_len(ilen);
 
-    let mut output = vec![0u8; olen];
+//     let mut output = vec![0u8; olen];
 
-    b.iter(|| {
-        base64_raw::decode_config_slice(input, base64_raw::STANDARD, &mut output).unwrap()
-    })
-}
+//     b.iter(|| {
+//         base64_raw::decode_config_slice(input, base64_raw::STANDARD, &mut output).unwrap()
+//     })
+// }

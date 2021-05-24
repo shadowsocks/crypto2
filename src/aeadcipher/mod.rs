@@ -269,6 +269,9 @@ impl_aead_cipher!(Aes256OcbTag128, AEAD_AES_256_OCB_TAGLEN128);
 impl_aead_cipher!(Chacha20Poly1305,  AEAD_CHACHA20_POLY1305);
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 
 #[cfg(test)]
 #[bench]

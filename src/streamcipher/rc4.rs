@@ -86,6 +86,10 @@ impl Rc4 {
 }
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_rc4() {
     // Test vectors

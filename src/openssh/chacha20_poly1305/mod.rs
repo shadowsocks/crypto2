@@ -93,6 +93,11 @@ impl Chacha20Poly1305 {
         let mut poly1305_key = [0u8; Poly1305::KEY_LEN];
         self.c2.encrypt_slice(pkt_seq_num, 0, &mut poly1305_key);
 
+        
+        // The Secure Shell (SSH) Transport Layer Protocol
+        //   6.1.  Maximum Packet Length
+        //      https://tools.ietf.org/html/rfc4253#section-6.1
+
         // The length in bytes of the `packet_length` field in a SSH packet.
         self.c1.encrypt_slice(pkt_seq_num, 0, pkt_len);
 

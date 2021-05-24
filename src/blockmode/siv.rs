@@ -402,6 +402,9 @@ impl_block_cipher_with_siv_cmac_mode!(AesSivCmac384, Aes192);
 impl_block_cipher_with_siv_cmac_mode!(AesSivCmac512, Aes256);
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 
 #[test]
 fn test_aes_siv_cmac_256_wycheproof_t2() {

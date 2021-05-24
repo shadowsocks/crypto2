@@ -1,12 +1,9 @@
 #![cfg_attr(test, feature(test))]
-#![feature(stdsimd, llvm_asm, simd_ffi, link_llvm_intrinsics)]
+#![feature(stdsimd)]
 #![allow(unused_macros, unused_assignments)]
 
 #[cfg(test)]
 extern crate test;
-
-#[cfg(test)]
-extern crate hex;
 
 
 mod util;

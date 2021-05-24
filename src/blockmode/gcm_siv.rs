@@ -281,6 +281,10 @@ impl_block_cipher_with_gcm_siv_mode!(Aria128GcmSiv, Aria128);
 impl_block_cipher_with_gcm_siv_mode!(Aria256GcmSiv, Aria256);
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_aes128_gcm_siv_dec() {
     let key       = hex::decode("01000000000000000000000000000000").unwrap();

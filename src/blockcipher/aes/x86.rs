@@ -429,6 +429,10 @@ impl Aes256 {
 }
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_example_vectors_aesni() {
     // Appendix C – Example Vectors 

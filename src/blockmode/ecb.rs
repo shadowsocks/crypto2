@@ -74,6 +74,10 @@ impl_block_cipher_with_ecb_mode!(Rc2FixedSizeEcb, Rc2FixedSize);
 impl_block_cipher_with_ecb_mode!(Sm4Ecb, Sm4);
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_aes128_ecb_enc() {
     // F.1.1  ECB-AES128.Encrypt, (Page-31)

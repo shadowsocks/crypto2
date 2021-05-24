@@ -362,6 +362,10 @@ impl_block_cipher_with_ccm_mode!(Aria256Ccm, Aria256, 12, 16, 3);         // NON
 
 
 #[cfg(test)]
+use crate::encoding::hex;
+
+
+#[cfg(test)]
 fn hex_decode<T: AsRef<str>>(s: T) -> Vec<u8> {
     let h = s.as_ref().replace(" ", "").replace("\n", "").replace("\r", "");
     hex::decode(&h).unwrap()

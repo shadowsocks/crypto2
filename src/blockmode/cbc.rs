@@ -108,6 +108,10 @@ impl_block_cipher_with_cbc_mode!(Camellia256Cbc, Camellia256);
 
 
 #[cfg(test)]
+use crate::encoding::hex;
+
+
+#[cfg(test)]
 #[bench]
 fn bench_aes128_cbc_enc(b: &mut test::Bencher) {
     let key = hex::decode("00000000000000000000000000000000").unwrap();

@@ -591,6 +591,10 @@ impl Aria256 {
 }
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_aria128() {
     // A.1.  128-Bit Key

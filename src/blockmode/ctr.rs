@@ -88,6 +88,10 @@ impl_block_cipher_with_ctr_mode!(Aria192Ctr, Aria192);
 impl_block_cipher_with_ctr_mode!(Aria256Ctr, Aria256);
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_aes128_ctr() {
     let key   = hex::decode("2b7e151628aed2a6abf7158809cf4f3c").unwrap();

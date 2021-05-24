@@ -4,40 +4,8 @@ use core::arch::aarch64::*;
 use core::mem::transmute;
 
 
-
-
-
-// NOTE: 等待 stdarch 项目增加 这个指令函数。
-type p64       = u64;
-type p128      = u128;
+// TODO: 等待 stdarch 项目增加 这个类型。
 type poly128_t = u128;
-
-/// Polynomial multiply long
-#[inline]
-// #[target_feature(enable = "neon,crypto")]
-// #[cfg_attr(test, assert_instr(pmull))]
-pub unsafe fn vmull_p64(a: p64, b: p64) -> p128 {
-    #[allow(improper_ctypes)]
-    extern "C" {
-        #[link_name = "llvm.aarch64.neon.pmull64"]
-        fn vmull_p64_(a: p64, b: p64) -> int8x16_t;
-    }
-    transmute(vmull_p64_(a, b))
-}
-
-/// Polynomial multiply long
-#[inline]
-// #[target_feature(enable = "neon,crypto")]
-// #[cfg_attr(test, assert_instr(pmull))]
-pub unsafe fn vmull_high_p64(a: poly64x2_t, b: poly64x2_t) -> p128 {
-    // vmull_p64(simd_extract(a, 1), simd_extract(b, 1))
-    
-    let t1: poly64x1_t = vget_high_p64(a);
-    let t2: poly64x1_t = vget_high_p64(b);
-    
-    vmull_p64(transmute(t1), transmute(t2))
-}
-
 
 
 #[inline]

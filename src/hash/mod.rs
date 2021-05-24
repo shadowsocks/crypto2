@@ -277,6 +277,9 @@ pub use self::sha3::*;
 // // SHA-3
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 
 #[test]
 fn test_hasher_oneshot() {

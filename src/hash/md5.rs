@@ -375,18 +375,14 @@ fn transform(state: &mut [u32; 4], block: &[u8]) {
 }
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
+
 #[test]
 fn test_md5() {
     // A.5 Test suite
     // https://tools.ietf.org/html/rfc1321#appendix-A.5
-    fn hexdigest(digest: &[u8]) -> String {
-        let mut s = String::new();
-        for n in digest.iter() {
-            s.push_str(format!("{:02x}", n).as_str());
-        }
-        s
-    }
-
     let suites: &[(&[u8], &str)] = &[
         (b"", "d41d8cd98f00b204e9800998ecf8427e"),
         (b"a", "0cc175b9c0f1b6a831c399e269772661"),
@@ -397,8 +393,7 @@ fn test_md5() {
         (b"12345678901234567890123456789012345678901234567890123456789012345678901234567890", "57edf4a22be3c955ac49da2e2107b67a"),
     ];
     for suite in suites.iter() {
-        let hexdigest = hexdigest(&Md5::oneshot(suite.0));
-        assert_eq!(hexdigest, suite.1);
+        assert_eq!(&hex::encode_lowercase(&Md5::oneshot(suite.0)), suite.1);
     }
 }
 

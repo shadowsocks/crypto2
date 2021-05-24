@@ -183,6 +183,9 @@ fn transform(state: &mut [u32; 4], block: &[u8]) {
 }
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 
 #[test]
 fn test_md4() {

@@ -420,6 +420,10 @@ impl_block_cipher_with_cfb128_mode!(Aria256Cfb128, Aria256);
 
 
 #[cfg(test)]
+use crate::encoding::hex;
+
+
+#[cfg(test)]
 #[bench]
 fn bench_aes128_cfb128_enc(b: &mut test::Bencher) {
     let key  = hex::decode("00000000000000000000000000000000").unwrap();

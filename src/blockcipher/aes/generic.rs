@@ -621,6 +621,9 @@ fn decrypt(state: &mut [u8], expanded_key: &[u8], nr: usize) {
 }
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 // =============================== Test Key Expansion ================================
 #[test]
 fn test_key_expansion_128() {

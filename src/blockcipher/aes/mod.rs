@@ -27,6 +27,9 @@ mod platform;
 pub use self::platform::*;
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 
 #[test]
 fn test_aes128() {

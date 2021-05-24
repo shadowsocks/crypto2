@@ -137,6 +137,9 @@ impl_hkdf_with_hmac!(HkdfSha512, HmacSha512);
 // SHA-3
 
 
+#[cfg(test)]
+use crate::encoding::hex;
+
 
 #[cfg(test)]
 fn hexdecode(s: &str) -> Vec<u8> {
@@ -192,7 +195,7 @@ f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff\
     let mut okm = vec![0u8; len];
     HkdfSha256::oneshot(&salt, &ikm, &info, &mut okm);
 
-    assert_eq!(&hex::encode(&okm), "b11e398dc80327a1c8e7f78c596a4934\
+    assert_eq!(&hex::encode_lowercase(&okm), "b11e398dc80327a1c8e7f78c596a4934\
 4f012eda2d4efad8a050cc4c19afa97c\
 59045a99cac7827271cb41c65e590e09\
 da3275600c2f09b8367793a9aca3db71\
@@ -209,7 +212,7 @@ cc30c58179ec3e87c14c01d5c1f3434f\
     let mut okm = vec![0u8; len];
     HkdfSha256::oneshot(&salt, &ikm, &info, &mut okm);
 
-    assert_eq!(&hex::encode(&okm), "8da4e775a563c18f715f802a063c5a31\
+    assert_eq!(&hex::encode_lowercase(&okm), "8da4e775a563c18f715f802a063c5a31\
 b8a11f5c5ee1879ec3454e5f3c738d2d\
 9d201395faa4b61a96c8\
 ");
@@ -223,7 +226,7 @@ b8a11f5c5ee1879ec3454e5f3c738d2d\
     let mut okm = vec![0u8; len];
     HkdfSha1::oneshot(&salt, &ikm, &info, &mut okm);
 
-    assert_eq!(&hex::encode(&okm), "085a01ea1b10f36933068b56efa5ad81\
+    assert_eq!(&hex::encode_lowercase(&okm), "085a01ea1b10f36933068b56efa5ad81\
 a4f14b822f5b091568a9cdd4f155fda2\
 c22e422478d305f3f896\
 ");
@@ -251,7 +254,7 @@ f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff\
 
     let mut okm = vec![0u8; len];
     HkdfSha1::oneshot(&salt, &ikm, &info, &mut okm);
-    assert_eq!(&hex::encode(&okm), "0bd770a74d1160f7c9f12cd5912a06eb\
+    assert_eq!(&hex::encode_lowercase(&okm), "0bd770a74d1160f7c9f12cd5912a06eb\
 ff6adcae899d92191fe4305673ba2ffe\
 8fa3f1a4e5ad79f3f334b3b202b2173c\
 486ea37ce3d397ed034c7f9dfeb15c5e\
@@ -267,7 +270,7 @@ d3b4\
 
     let mut okm = vec![0u8; len];
     HkdfSha1::oneshot(&salt, &ikm, &info, &mut okm);
-    assert_eq!(&hex::encode(&okm), "0ac1af7002b3d761d1e55298da9d0506\
+    assert_eq!(&hex::encode_lowercase(&okm), "0ac1af7002b3d761d1e55298da9d0506\
 b9ae52057220a306e07b6b87e8df21d0\
 ea00033de03984d34918\
 ");
@@ -281,7 +284,7 @@ ea00033de03984d34918\
 
     let mut okm = vec![0u8; len];
     HkdfSha1::oneshot(&salt, &ikm, &info, &mut okm);
-    assert_eq!(&hex::encode(&okm), "2c91117204d745f3500d636a62f64f0a\
+    assert_eq!(&hex::encode_lowercase(&okm), "2c91117204d745f3500d636a62f64f0a\
 b3bae548aa53d423b0d1f27ebba6f5e5\
 673a081d70cce7acfc48\
 ");

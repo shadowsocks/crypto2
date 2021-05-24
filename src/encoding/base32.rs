@@ -683,77 +683,77 @@ fn test_base32() {
 }
 
 
-#[cfg(test)]
-#[bench]
-fn bench_encode_slice(b: &mut test::Bencher) {
-    let input = b"foobar";
-    let ilen = input.len();
-    let olen = encode_buffer_len(ilen, DEFAULT_CONFIG);
+// #[cfg(test)]
+// #[bench]
+// fn bench_encode_slice(b: &mut test::Bencher) {
+//     let input = b"foobar";
+//     let ilen = input.len();
+//     let olen = encode_buffer_len(ilen, DEFAULT_CONFIG);
 
-    let mut output = vec![0u8; olen];
+//     let mut output = vec![0u8; olen];
 
-    b.iter(|| {
-        encode_to_slice(input, &mut output)
-    })
-}
+//     b.iter(|| {
+//         encode_to_slice(input, &mut output)
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_decode_slice(b: &mut test::Bencher) {
-    let input = b"MZXW6YTBOI======";
-    let ilen = input.len();
-    let olen = decode_buffer_len(ilen);
+// #[cfg(test)]
+// #[bench]
+// fn bench_decode_slice(b: &mut test::Bencher) {
+//     let input = b"MZXW6YTBOI======";
+//     let ilen = input.len();
+//     let olen = decode_buffer_len(ilen);
 
-    let mut output = vec![0u8; olen];
+//     let mut output = vec![0u8; olen];
 
-    b.iter(|| {
-        decode_to_slice(input, &mut output).unwrap()
-    })
-}
+//     b.iter(|| {
+//         decode_to_slice(input, &mut output).unwrap()
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_encode(b: &mut test::Bencher) {
-    let input = b"foobar";
+// #[cfg(test)]
+// #[bench]
+// fn bench_encode(b: &mut test::Bencher) {
+//     let input = b"foobar";
 
-    b.iter(|| {
-        encode(input)
-    })
-}
+//     b.iter(|| {
+//         encode(input)
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_decode(b: &mut test::Bencher) {
-    let input = b"MZXW6YTBOI======";
+// #[cfg(test)]
+// #[bench]
+// fn bench_decode(b: &mut test::Bencher) {
+//     let input = b"MZXW6YTBOI======";
 
-    b.iter(|| {
-        decode(input).unwrap()
-    })
-}
+//     b.iter(|| {
+//         decode(input).unwrap()
+//     })
+// }
 
 
-#[cfg(test)]
-#[bench]
-fn bench_crate_encode(b: &mut test::Bencher) {
-    use base32::Alphabet;
+// #[cfg(test)]
+// #[bench]
+// fn bench_crate_encode(b: &mut test::Bencher) {
+//     use base32::Alphabet;
 
-    let input = b"foobar";
+//     let input = b"foobar";
 
-    let alphabet = Alphabet::RFC4648 { padding: true };
-    b.iter(|| {
-        base32::encode(alphabet, input)
-    })
-}
+//     let alphabet = Alphabet::RFC4648 { padding: true };
+//     b.iter(|| {
+//         base32::encode(alphabet, input)
+//     })
+// }
 
-#[cfg(test)]
-#[bench]
-fn bench_crate_decode(b: &mut test::Bencher) {
-    use base32::Alphabet;
+// #[cfg(test)]
+// #[bench]
+// fn bench_crate_decode(b: &mut test::Bencher) {
+//     use base32::Alphabet;
 
-    let input = "MZXW6YTBOI======";
+//     let input = "MZXW6YTBOI======";
 
-    let alphabet = Alphabet::RFC4648 { padding: true };
-    b.iter(|| {
-        base32::decode(alphabet, input).unwrap()
-    })
-}
+//     let alphabet = Alphabet::RFC4648 { padding: true };
+//     b.iter(|| {
+//         base32::decode(alphabet, input).unwrap()
+//     })
+// }

@@ -54,9 +54,9 @@ impl Aes128 {
     pub const BLOCK_LEN: usize = 16;
     pub const KEY_LEN: usize   = 16;
     pub const NR: usize        = 10;
-
     const WLEN: usize = (Self::NR + 1) * 4; // 44
 
+    
     pub fn new(key: &[u8]) -> Self {
         assert_eq!(key.len(), Self::KEY_LEN);
 
