@@ -48,74 +48,46 @@ pub fn blake2s_256<T: AsRef<[u8]>>(data: T) -> [u8; Blake2s256::DIGEST_LEN] {
     Blake2s256::oneshot(data)
 }
 
+macro_rules! impl_blake2s_fixed_output {
+    ($name:tt, $hlen:tt) => {
+        #[derive(Clone)]
+        pub struct $name {
+            inner: Blake2s,
+        }
 
-#[derive(Clone)]
-pub struct Blake2s224 {
-    inner: Blake2s,
-}
-
-impl Blake2s224 {
-    pub const BLOCK_LEN: usize  = Blake2s::BLOCK_LEN;
-    pub const DIGEST_LEN: usize = 28;
-
-
-    #[inline]
-    pub fn new() -> Self {
-        Self { inner: Blake2s::new(b"", 28) }
-    }
-
-    #[inline]
-    pub fn update(&mut self, data: &[u8]) {
-        self.inner.update(data)
-    }
-
-    #[inline]
-    pub fn finalize(self) -> [u8; Self::DIGEST_LEN] {
-        let mut digest = [0u8; Self::DIGEST_LEN];
-        self.inner.finalize(&mut digest);
-        digest
-    }
-
-    pub fn oneshot<T: AsRef<[u8]>>(data: T) -> [u8; Self::DIGEST_LEN] {
-        let mut m = Self::new();
-        m.update(data.as_ref());
-        m.finalize()
-    }
-}
-
-#[derive(Clone)]
-pub struct Blake2s256 {
-    inner: Blake2s,
-}
-
-impl Blake2s256 {
-    pub const BLOCK_LEN: usize  = Blake2s::BLOCK_LEN;
-    pub const DIGEST_LEN: usize = 32;
+        impl $name {
+            pub const BLOCK_LEN: usize  = Blake2s::BLOCK_LEN;
+            pub const DIGEST_LEN: usize = $hlen;
 
 
-    #[inline]
-    pub fn new() -> Self {
-        Self { inner: Blake2s::new(b"", 32) }
-    }
+            #[inline]
+            pub fn new() -> Self {
+                Self { inner: Blake2s::new(b"", $hlen) }
+            }
 
-    #[inline]
-    pub fn update(&mut self, data: &[u8]) {
-        self.inner.update(data)
-    }
+            #[inline]
+            pub fn update(&mut self, data: &[u8]) {
+                self.inner.update(data)
+            }
 
-    #[inline]
-    pub fn finalize(self) -> [u8; Self::DIGEST_LEN] {
-        let mut digest = [0u8; Self::DIGEST_LEN];
-        self.inner.finalize(&mut digest);
-        digest
-    }
+            #[inline]
+            pub fn finalize(self) -> [u8; Self::DIGEST_LEN] {
+                let mut digest = [0u8; Self::DIGEST_LEN];
+                self.inner.finalize(&mut digest);
+                digest
+            }
 
-    pub fn oneshot<T: AsRef<[u8]>>(data: T) -> [u8; Self::DIGEST_LEN] {
-        let mut m = Self::new();
-        m.update(data.as_ref());
-        m.finalize()
+            pub fn oneshot<T: AsRef<[u8]>>(data: T) -> [u8; Self::DIGEST_LEN] {
+                let mut m = Self::new();
+                m.update(data.as_ref());
+                m.finalize()
+            }
+        }
     }
 }
+
+impl_blake2s_fixed_output!(Blake2s224, 28);
+impl_blake2s_fixed_output!(Blake2s256, 32);
 
 
 #[derive(Clone)]
