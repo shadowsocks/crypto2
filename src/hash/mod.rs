@@ -7,6 +7,9 @@ mod sha2;
 // TODO: 暂未实现
 mod sha3;
 
+mod blake2;
+
+
 pub use self::md2::*;
 pub use self::md4::*;
 pub use self::md5::*;
@@ -14,6 +17,8 @@ pub use self::sm3::*;
 pub use self::sha1::*;
 pub use self::sha2::*;
 pub use self::sha3::*;
+
+pub use self::blake2::*;
 
 
 // const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
@@ -396,5 +401,25 @@ fn bench_sha512(b: &mut test::Bencher) {
     b.bytes = data.len() as u64;
     b.iter(|| {
         sha512(&data)
+    });
+}
+
+#[cfg(test)]
+#[bench]
+fn bench_blake2b_256(b: &mut test::Bencher) {
+    let data = [1u8; Blake2b256::BLOCK_LEN];
+    b.bytes = Blake2b256::BLOCK_LEN as u64;
+    b.iter(|| {
+        blake2b_256(&data)
+    });
+}
+
+#[cfg(test)]
+#[bench]
+fn bench_blake2s_256(b: &mut test::Bencher) {
+    let data = [1u8; Blake2s256::BLOCK_LEN];
+    b.bytes = Blake2s256::BLOCK_LEN as u64;
+    b.iter(|| {
+        blake2s_256(&data)
     });
 }
