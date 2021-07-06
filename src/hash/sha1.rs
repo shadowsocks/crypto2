@@ -47,7 +47,7 @@ impl Sha1 {
     const MAX_PAD_LEN: usize    = Self::BLOCK_LEN + Self::MLEN_SIZE as usize;
 
 
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             buffer: [0u8; 64],
             state: INITIAL_STATE,

@@ -30,6 +30,7 @@ pub use crate::blockmode::{
 
 mod chacha20_poly1305;
 pub use self::chacha20_poly1305::Chacha20Poly1305;
+pub use self::chacha20_poly1305::XChacha20Poly1305;
 
 
 #[allow(non_camel_case_types)]
@@ -293,6 +294,24 @@ fn bench_chacha20_poly1305_enc(b: &mut test::Bencher) {
 
 #[cfg(test)]
 #[bench]
+fn bench_xchacha20_poly1305_enc(b: &mut test::Bencher) {
+    let key   = [1u8; XChacha20Poly1305::KEY_LEN];
+    let nonce = [2u8; XChacha20Poly1305::NONCE_LEN];
+    let aad   = [0u8; 0];
+    
+    let mut tag_out    = test::black_box([ 1u8; XChacha20Poly1305::TAG_LEN ]);
+    let mut ciphertext = test::black_box([ 1u8; XChacha20Poly1305::BLOCK_LEN ]);
+    
+    let cipher = XChacha20Poly1305::new(&key);
+
+    b.bytes = XChacha20Poly1305::BLOCK_LEN as u64;
+    b.iter(|| {
+        cipher.encrypt_slice_detached(&nonce, &aad, &mut ciphertext, &mut tag_out);
+    })
+}
+
+#[cfg(test)]
+#[bench]
 fn bench_aes128_gcm_enc(b: &mut test::Bencher) {
     let key   = hex::decode("000102030405060708090a0b0c0d0e0f").unwrap();
     let nonce = hex::decode("cafebabefacedbaddecaf888").unwrap();
@@ -302,6 +321,21 @@ fn bench_aes128_gcm_enc(b: &mut test::Bencher) {
     let cipher = Aes128Gcm::new(&key);
 
     b.bytes = Aes128Gcm::BLOCK_LEN as u64;
+    b.iter(|| {
+        cipher.encrypt_slice(&nonce, &aad, &mut plaintext_and_ciphertext);
+    })
+}
+#[cfg(test)]
+#[bench]
+fn bench_aes256_gcm_enc(b: &mut test::Bencher) {
+    let key   = hex::decode("000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f").unwrap();
+    let nonce = hex::decode("cafebabefacedbaddecaf888").unwrap();
+    let aad = [0u8; 0];
+
+    let mut plaintext_and_ciphertext = test::black_box([1u8; Aes256Gcm::BLOCK_LEN + Aes256Gcm::TAG_LEN]);
+    let cipher = Aes256Gcm::new(&key);
+
+    b.bytes = Aes256Gcm::BLOCK_LEN as u64;
     b.iter(|| {
         cipher.encrypt_slice(&nonce, &aad, &mut plaintext_and_ciphertext);
     })

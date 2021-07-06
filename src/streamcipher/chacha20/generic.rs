@@ -1,34 +1,3 @@
-// use crate::util::xor_si128_inplace;
-
-
-#[inline]
-fn add_si512_inplace(a: &mut [u32; Chacha20::STATE_LEN], b: &[u32; Chacha20::STATE_LEN]) {
-    for i in 0..Chacha20::STATE_LEN {
-        a[i] = a[i].wrapping_add(b[i]);
-    }
-}
-
-#[inline]
-fn xor_si512_inplace(a: &mut [u8], b: &[u32; Chacha20::STATE_LEN]) {
-    // NOTE: 看起来编译器会对这种单独的函数做优化，我们不再需要手动写 AVX2/AVX512 的代码咯。
-    use core::slice;
-    
-    unsafe {
-        let d1 = slice::from_raw_parts_mut(a.as_mut_ptr() as *mut u32, Chacha20::STATE_LEN);
-        for i in 0..Chacha20::STATE_LEN {
-            d1[i] ^= b[i];
-        }
-    }
-}
-
-#[inline]
-fn v512_i8_xor_inplace(a: &mut [u8], b: &[u8]) {
-    for i in 0..64 {
-        a[i] ^= b[i];
-    }
-}
-
-
 /// ChaCha20 for IETF Protocols
 /// 
 /// <https://tools.ietf.org/html/rfc8439>
@@ -51,25 +20,19 @@ impl Chacha20 {
 
     const STATE_LEN: usize = 16; // len in doubleword (32-bits)
 
-    // NOTE: 16 bytes 长度的 Key 并没有被标准采纳。
-    // 
-    // sigma constant b"expand 16-byte k" in little-endian encoding
-    // const K16: [u32; 4] = [0x61707865, 0x3120646e, 0x79622d36, 0x6b206574];
-
-    // sigma constant b"expand 32-byte k" in little-endian encoding
-    const K32: [u32; 4] = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
-    
-    
     pub fn new(key: &[u8]) -> Self {
         assert_eq!(key.len(), Self::KEY_LEN);
 
         let mut initial_state = [0u32; Self::STATE_LEN];
 
         // The ChaCha20 state is initialized as follows:
-        initial_state[0] = Self::K32[0];
-        initial_state[1] = Self::K32[1];
-        initial_state[2] = Self::K32[2];
-        initial_state[3] = Self::K32[3];
+        // 
+        // SIGMA constant b"expand 16-byte k" [0x61707865, 0x3120646e, 0x79622d36, 0x6b206574]
+        // SIGMA constant b"expand 32-byte k" [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]
+        initial_state[0] = 0x61707865;
+        initial_state[1] = 0x3320646e;
+        initial_state[2] = 0x79622d32;
+        initial_state[3] = 0x6b206574;
 
         // A 256-bit key (32 Bytes)
         initial_state[ 4] = u32::from_le_bytes([key[ 0], key[ 1], key[ 2], key[ 3]]);
@@ -94,35 +57,39 @@ impl Chacha20 {
         initial_state[12] = init_block_counter;
 
         // Nonce (96-bits, little-endian)
-        if cfg!(target_endian = "little") {
-            unsafe {
-                let data: &[u32] = std::slice::from_raw_parts(nonce.as_ptr() as *const u32, nonce.len() / core::mem::size_of::<u32>());
-                initial_state[13..16].copy_from_slice(data);
-            }
-        } else {
-            initial_state[13] = u32::from_le_bytes([nonce[ 0], nonce[ 1], nonce[ 2], nonce[ 3]]);
-            initial_state[14] = u32::from_le_bytes([nonce[ 4], nonce[ 5], nonce[ 6], nonce[ 7]]);
-            initial_state[15] = u32::from_le_bytes([nonce[ 8], nonce[ 9], nonce[10], nonce[11]]);
-        }
+        initial_state[13] = u32::from_le_bytes([nonce[ 0], nonce[ 1], nonce[ 2], nonce[ 3]]);
+        initial_state[14] = u32::from_le_bytes([nonce[ 4], nonce[ 5], nonce[ 6], nonce[ 7]]);
+        initial_state[15] = u32::from_le_bytes([nonce[ 8], nonce[ 9], nonce[10], nonce[11]]);
         
         let mut chunks = plaintext_or_ciphertext.chunks_exact_mut(Self::BLOCK_LEN);
-        for plaintext in &mut chunks {
+
+        for block in &mut chunks {
             let mut state = initial_state.clone();
 
             // 20 rounds (diagonal rounds)
             diagonal_rounds(&mut state);
-            add_si512_inplace(&mut state, &mut initial_state);
+            for i in 0..16 {
+                state[i] = state[i].wrapping_add(initial_state[i]);
+            }
 
             // Update Block Counter
             initial_state[12] = initial_state[12].wrapping_add(1);
 
-            if cfg!(target_endian = "little") {
-                xor_si512_inplace(plaintext, &state);
-            } else {
+            // XOR 512-bits
+            #[cfg(target_endian = "little")]
+            unsafe {
+                let p = core::slice::from_raw_parts_mut(block.as_mut_ptr() as *mut u32, 16);
+                for i in 0..16 {
+                    p[i] ^= state[i];
+                }
+            }
+            #[cfg(target_endian = "big")]
+            {
                 let mut keystream = [0u8; Self::BLOCK_LEN];
                 state_to_keystream(&state, &mut keystream);
-
-                v512_i8_xor_inplace(plaintext, &keystream)
+                for i in 0..64 {
+                    p[i] ^= keystream[i];
+                }
             }
         }
 
@@ -135,18 +102,20 @@ impl Chacha20 {
 
             // 20 rounds (diagonal rounds)
             diagonal_rounds(&mut state);
-            add_si512_inplace(&mut state, &mut initial_state);
+            for i in 0..16 {
+                state[i] = state[i].wrapping_add(initial_state[i]);
+            }
             
-            if cfg!(target_endian = "little") {
-                unsafe {
-                    use core::slice;
-                    
-                    let keystream = slice::from_raw_parts(state.as_ptr() as *const u8, Self::BLOCK_LEN);
-                    for i in 0..rlen {
-                        rem[i] ^= keystream[i];
-                    }
+            #[cfg(target_endian = "little")]
+            unsafe {
+                let keystream = core::slice::from_raw_parts(state.as_ptr() as *const u8, Self::BLOCK_LEN);
+                for i in 0..rlen {
+                    rem[i] ^= keystream[i];
                 }
-            } else {
+            }
+
+            #[cfg(target_endian = "big")]
+            {
                 let mut keystream = [0u8; Self::BLOCK_LEN];
                 state_to_keystream(&state, &mut keystream);
 
@@ -205,6 +174,7 @@ fn diagonal_rounds(state: &mut [u32; Chacha20::STATE_LEN]) {
         quarter_round(state, 1, 5,  9, 13);
         quarter_round(state, 2, 6, 10, 14);
         quarter_round(state, 3, 7, 11, 15);
+
         quarter_round(state, 0, 5, 10, 15);
         quarter_round(state, 1, 6, 11, 12);
         quarter_round(state, 2, 7,  8, 13);
@@ -212,18 +182,19 @@ fn diagonal_rounds(state: &mut [u32; Chacha20::STATE_LEN]) {
     }
 }
 
+#[cfg(target_endian = "big")]
 #[inline]
 fn state_to_keystream(state: &[u32; Chacha20::STATE_LEN], keystream: &mut [u8; Chacha20::BLOCK_LEN]) {
-    keystream[ 0.. 4].copy_from_slice(&state[0].to_le_bytes());
-    keystream[ 4.. 8].copy_from_slice(&state[1].to_le_bytes());
-    keystream[ 8..12].copy_from_slice(&state[2].to_le_bytes());
-    keystream[12..16].copy_from_slice(&state[3].to_le_bytes());
-    keystream[16..20].copy_from_slice(&state[4].to_le_bytes());
-    keystream[20..24].copy_from_slice(&state[5].to_le_bytes());
-    keystream[24..28].copy_from_slice(&state[6].to_le_bytes());
-    keystream[28..32].copy_from_slice(&state[7].to_le_bytes());
-    keystream[32..36].copy_from_slice(&state[8].to_le_bytes());
-    keystream[36..40].copy_from_slice(&state[9].to_le_bytes());
+    keystream[ 0.. 4].copy_from_slice(&state[ 0].to_le_bytes());
+    keystream[ 4.. 8].copy_from_slice(&state[ 1].to_le_bytes());
+    keystream[ 8..12].copy_from_slice(&state[ 2].to_le_bytes());
+    keystream[12..16].copy_from_slice(&state[ 3].to_le_bytes());
+    keystream[16..20].copy_from_slice(&state[ 4].to_le_bytes());
+    keystream[20..24].copy_from_slice(&state[ 5].to_le_bytes());
+    keystream[24..28].copy_from_slice(&state[ 6].to_le_bytes());
+    keystream[28..32].copy_from_slice(&state[ 7].to_le_bytes());
+    keystream[32..36].copy_from_slice(&state[ 8].to_le_bytes());
+    keystream[36..40].copy_from_slice(&state[ 9].to_le_bytes());
     keystream[40..44].copy_from_slice(&state[10].to_le_bytes());
     keystream[44..48].copy_from_slice(&state[11].to_le_bytes());
     keystream[48..52].copy_from_slice(&state[12].to_le_bytes());

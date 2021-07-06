@@ -8,7 +8,7 @@ mod sha2;
 mod sha3;
 
 mod blake2;
-
+mod blake3;
 
 pub use self::md2::*;
 pub use self::md4::*;
@@ -19,6 +19,7 @@ pub use self::sha2::*;
 pub use self::sha3::*;
 
 pub use self::blake2::*;
+pub use self::blake3::*;
 
 
 // const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";

@@ -28,9 +28,11 @@ pub use crate::blockmode::{
 
 mod rc4;
 mod chacha20;
+mod xchacha20;
 
 pub use self::rc4::*;
 pub use self::chacha20::*;
+pub use self::xchacha20::*;
 
 
 #[cfg(test)]
@@ -70,11 +72,35 @@ fn bench_chacha20(b: &mut test::Bencher) {
 
     let mut plaintext_and_ciphertext = test::black_box([1u8; Chacha20::BLOCK_LEN]);
     
-    let chacha20 = Chacha20::new(&key);
+    let cipher = Chacha20::new(&key);
     
     b.bytes = Chacha20::BLOCK_LEN as u64;
     b.iter(|| {
-        chacha20.encrypt_slice(1, &nonce, &mut plaintext_and_ciphertext);
+        cipher.encrypt_slice(1, &nonce, &mut plaintext_and_ciphertext);
     })
 }
 
+#[cfg(test)]
+#[bench]
+fn bench_xchacha20(b: &mut test::Bencher) {
+    let key = [
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+    ];
+    let nonce = [
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 
+    ];
+
+    let mut plaintext_and_ciphertext = test::black_box([1u8; XChacha20::BLOCK_LEN]);
+    
+    let cipher = XChacha20::new(&key);
+    
+    b.bytes = XChacha20::BLOCK_LEN as u64;
+    b.iter(|| {
+        cipher.encrypt_slice(1, &nonce, &mut plaintext_and_ciphertext);
+    })
+}
