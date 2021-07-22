@@ -62,7 +62,61 @@ pub fn blake2b_224<T: AsRef<[u8]>>(data: T) -> [u8; Blake2b224::DIGEST_LEN] {
 
 /// BLAKE2b-256
 pub fn blake2b_256<T: AsRef<[u8]>>(data: T) -> [u8; Blake2b256::DIGEST_LEN] {
-    Blake2b256::oneshot(data)
+    // Blake2b256::oneshot(data)
+
+    // NOTE: 后续所有的 摘要函数 的 oneshot 都应该避免使用 流式写法。（流式写法在 Update 时的 Copy 非常低效，在大部分场景里面也无必要）
+    let data = data.as_ref();
+
+    // parameter block
+    let hlen = 32;
+    let p1 = u64::from_le_bytes([
+        hlen, 0, 1, 1, // digest_length, key_length, fanout, depth
+        0, 0, 0, 0,                   // leaf_length
+    ]);
+
+    // IV XOR ParamBlock
+    let s1 = BLAKE2B_IV[0] ^ p1;
+    let mut state: [u64; 8] = [
+        // H
+        s1,          BLAKE2B_IV[1], 
+        BLAKE2B_IV[2], BLAKE2B_IV[3],
+        BLAKE2B_IV[4], BLAKE2B_IV[5], 
+        BLAKE2B_IV[6], BLAKE2B_IV[7],
+    ];
+
+
+    let mut block_counter = 0u128;
+    
+    let chunks = data.chunks_exact(Blake2b::BLOCK_LEN);
+    let rem = chunks.remainder();
+
+    for chunk in chunks {
+        block_counter = block_counter.wrapping_add(Blake2b::BLOCK_LEN as u128);
+        transform(&mut state, chunk, block_counter, 0);
+    }
+
+    let rlen = rem.len();
+    
+    let mut block = [0u8; Blake2b::BLOCK_LEN];
+    if rlen > 0 {
+        block[..rlen].copy_from_slice(&rem);
+    }
+
+    block_counter = block_counter.wrapping_add(rlen as u128);
+    transform(&mut state, &block, block_counter, u64::MAX as u128);
+
+    // let mut hash = [0u8; Blake2b::H_MAX]; // 64
+    let mut hash = [0u8; 32];
+    hash[ 0.. 8].copy_from_slice(&state[0].to_le_bytes());
+    hash[ 8..16].copy_from_slice(&state[1].to_le_bytes());
+    hash[16..24].copy_from_slice(&state[2].to_le_bytes());
+    hash[24..32].copy_from_slice(&state[3].to_le_bytes());
+    // hash[32..40].copy_from_slice(&state[4].to_le_bytes());
+    // hash[40..48].copy_from_slice(&state[5].to_le_bytes());
+    // hash[48..56].copy_from_slice(&state[6].to_le_bytes());
+    // hash[56..64].copy_from_slice(&state[7].to_le_bytes());
+
+    hash
 }
 
 /// BLAKE2b-384
