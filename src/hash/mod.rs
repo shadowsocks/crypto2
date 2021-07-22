@@ -7,8 +7,10 @@ mod sha2;
 // TODO: 暂未实现
 mod sha3;
 
-mod blake2;
+mod blake2s;
+mod blake2b;
 mod blake3;
+
 
 pub use self::md2::*;
 pub use self::md4::*;
@@ -18,7 +20,8 @@ pub use self::sha1::*;
 pub use self::sha2::*;
 pub use self::sha3::*;
 
-pub use self::blake2::*;
+pub use self::blake2s::*;
+pub use self::blake2b::*;
 pub use self::blake3::*;
 
 
@@ -408,7 +411,7 @@ fn bench_sha512(b: &mut test::Bencher) {
 #[cfg(test)]
 #[bench]
 fn bench_blake2b_256(b: &mut test::Bencher) {
-    let data = [1u8; Blake2b256::BLOCK_LEN];
+    let data = test::black_box([1u8; Blake2b256::BLOCK_LEN]);
     b.bytes = Blake2b256::BLOCK_LEN as u64;
     b.iter(|| {
         blake2b_256(&data)
@@ -418,7 +421,7 @@ fn bench_blake2b_256(b: &mut test::Bencher) {
 #[cfg(test)]
 #[bench]
 fn bench_blake2s_256(b: &mut test::Bencher) {
-    let data = [1u8; Blake2s256::BLOCK_LEN];
+    let data = test::black_box([1u8; Blake2s256::BLOCK_LEN]);
     b.bytes = Blake2s256::BLOCK_LEN as u64;
     b.iter(|| {
         blake2s_256(&data)

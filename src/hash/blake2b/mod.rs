@@ -1,39 +1,40 @@
-use super::SIGMA;
-// enum blake2b_constant {
-//     BLAKE2B_BLOCKBYTES = 128,
-//     BLAKE2B_OUTBYTES   = 64,
-//     BLAKE2B_KEYBYTES   = 64,
-//     BLAKE2B_SALTBYTES  = 16,
-//     BLAKE2B_PERSONALBYTES = 16
-// };
+// BLAKE2: simpler, smaller, fast as MD5
+// https://www.blake2.net/blake2.pdf
 // 
-// typedef struct blake2b_state__ {
-//     uint64_t h[8];
-//     uint64_t t[2];
-//     uint64_t f[2];
-//     uint8_t  buf[BLAKE2B_BLOCKBYTES];
-//     size_t   buflen;
-//     size_t   outlen;
-//     uint8_t  last_node;
-// } blake2b_state;
+// The BLAKE2 Cryptographic Hash and Message Authentication Code (MAC)
+// https://datatracker.ietf.org/doc/html/rfc7693
 // 
-// BLAKE2_PACKED(struct blake2b_param__ {
-//     uint8_t  digest_length; /* 1 */
-//     uint8_t  key_length;    /* 2 */
-//     uint8_t  fanout;        /* 3 */
-//     uint8_t  depth;         /* 4 */
-//     uint32_t leaf_length;   /* 8 */
-//     uint32_t node_offset;   /* 12 */
-//     uint32_t xof_length;    /* 16 */
-//     uint8_t  node_depth;    /* 17 */
-//     uint8_t  inner_length;  /* 18 */
-//     uint8_t  reserved[14];  /* 32 */
-//     uint8_t  salt[BLAKE2B_SALTBYTES]; /* 48 */
-//     uint8_t  personal[BLAKE2B_PERSONALBYTES];  /* 64 */
-// });
+// BLAKE2 comes in two basic flavors:
 // 
-// typedef struct blake2b_param__ blake2b_param;
-
+//     o  BLAKE2b (or just BLAKE2) is optimized for 64-bit platforms and
+//        produces digests of any size between 1 and 64 bytes.
+// 
+//     o  BLAKE2s is optimized for 8- to 32-bit platforms and produces
+//        digests of any size between 1 and 32 bytes.
+// 
+// Both BLAKE2b and BLAKE2s are believed to be highly secure and perform
+// well on any platform, software, or hardware.  BLAKE2 does not require
+// a special "HMAC" (Hashed Message Authentication Code) construction
+// for keyed message authentication as it has a built-in keying mechanism.
+// 
+// 
+// 2.1.  Parameters
+// https://datatracker.ietf.org/doc/html/rfc7693#section-2.1
+// 
+//    The following table summarizes various parameters and their ranges:
+// 
+//                             | BLAKE2b          | BLAKE2s          |
+//               --------------+------------------+------------------+
+//                Bits in word | w = 64           | w = 32           |
+//                Rounds in F  | r = 12           | r = 10           |
+//                Block bytes  | bb = 128         | bb = 64          |
+//                Hash bytes   | 1 <= nn <= 64    | 1 <= nn <= 32    |
+//                Key bytes    | 0 <= kk <= 64    | 0 <= kk <= 32    |
+//                Input bytes  | 0 <= ll < 2**128 | 0 <= ll < 2**64  |
+//               --------------+------------------+------------------+
+//                G Rotation   | (R1, R2, R3, R4) | (R1, R2, R3, R4) |
+//                 constants = | (32, 24, 16, 63) | (16, 12,  8,  7) |
+//               --------------+------------------+------------------+
 const BLAKE2B_IV: [u64; 8] = [
     0x6a09e667f3bcc908, 0xbb67ae8584caa73b,
     0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
@@ -42,25 +43,17 @@ const BLAKE2B_IV: [u64; 8] = [
 ];
 
 
-pub struct Blake2bParam {
-    data: [u64; 8],
-}
+mod generic;
 
-impl Blake2bParam {
-    pub fn digest_length(&self) -> u8 {
-        todo!()
-    }
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    target_feature = "sse2",
+))]
+mod x86;
 
-    pub fn key_length(&self) -> u8 {
-        todo!()
-    }
-}
 
-impl Blake2bParam {
-    pub const fn digest_len(&self) -> u8 {
-        self.data[0].to_le_bytes()[0]
-    }
-}
+use self::generic::transform;
+
 
 /// BLAKE2b-224
 pub fn blake2b_224<T: AsRef<[u8]>>(data: T) -> [u8; Blake2b224::DIGEST_LEN] {
@@ -130,41 +123,24 @@ impl_blake2b_fixed_output!(Blake2b512, 64);
 pub struct Blake2b {
     buffer: [u8; Self::BLOCK_LEN],
     offset: usize,
-
     state: [u64; 8],
-
-    t0: u64,
-    t1: u64,
-    f0: u64,
-    f1: u64,
-    last_node: u8,
-
+    block_counter: u128, // T0, T1
     hlen: usize,
 }
 
 impl Blake2b {
     pub const BLOCK_LEN: usize  = 128;
     
-    // block length in bytes: 1 <= nn <= 64
     pub const H_MIN: usize =  1;
     pub const H_MAX: usize = 64;
     
-    // key length in bytes: 0 <= kk <= 64
     pub const K_MIN: usize =  0;
     pub const K_MAX: usize = 64;
 
-    // input bytes: 0 <= ll < 2**128
     pub const M_MIN: u128 = 0;
     pub const M_MAX: u128 = u128::MAX;
 
     pub const ROUNDS: usize = 12; // Rounds in F
-
-    //                        (R1, R2, R3, R4)
-    // G Rotation constants = (32, 24, 16, 63)
-    const R1: u32 = 32;
-    const R2: u32 = 24;
-    const R3: u32 = 16;
-    const R4: u32 = 63;
 
 
     pub fn new(key: &[u8], hlen: usize) -> Self {
@@ -192,14 +168,8 @@ impl Blake2b {
         let mut hasher = Self {
             buffer: [0u8; Self::BLOCK_LEN],
             offset: 0,
-
-            state: state,
-            t0: 0,
-            t1: 0,
-            f0: 0,
-            f1: 0,
-            last_node: 0,
-
+            state,
+            block_counter: 0,
             hlen,
         };
 
@@ -212,104 +182,6 @@ impl Blake2b {
 
         hasher
     }
-    
-    pub const fn digest_len(&self) -> usize {
-        self.hlen
-    }
-
-    #[inline]
-    fn transform(state: &mut [u64; 8], block: &[u8], t0: u64, t1: u64, f0: u64, f1: u64) {
-        debug_assert_eq!(state.len(), 8);
-        debug_assert_eq!(block.len(), Self::BLOCK_LEN);
-
-        let mut m = [0u64; 16];
-        let mut v = [0u64; 16];
-
-        for i in 0usize..16 {
-            let pos = i * 8;
-            m[i] = u64::from_le_bytes([
-                block[pos + 0],
-                block[pos + 1], 
-                block[pos + 2], 
-                block[pos + 3], 
-                block[pos + 4], 
-                block[pos + 5], 
-                block[pos + 6], 
-                block[pos + 7], 
-            ]);
-        }
-
-        v[..8].copy_from_slice(&state[..]);
-
-        v[ 8] = BLAKE2B_IV[0];
-        v[ 9] = BLAKE2B_IV[1];
-        v[10] = BLAKE2B_IV[2];
-        v[11] = BLAKE2B_IV[3];
-        v[12] = BLAKE2B_IV[4] ^ t0;
-        v[13] = BLAKE2B_IV[5] ^ t1;
-        v[14] = BLAKE2B_IV[6] ^ f0;
-        v[15] = BLAKE2B_IV[7] ^ f1;
-
-        macro_rules! G {
-            ($r:expr, $i:expr, $a:expr, $b:expr, $c:expr, $d:expr) => {
-                $a = $a.wrapping_add($b).wrapping_add(m[SIGMA[$r][2 * $i + 0] as usize]);
-                $d = ($d ^ $a).rotate_right(Self::R1); // R1
-
-                $c = $c.wrapping_add($d);
-                $b = ($b ^ $c).rotate_right(Self::R2); // R2
-
-                $a = $a.wrapping_add($b).wrapping_add(m[SIGMA[$r][2 * $i + 1] as usize]);
-                $d = ($d ^ $a).rotate_right(Self::R3); // R3
-
-                $c = $c.wrapping_add($d);
-                $b = ($b ^ $c).rotate_right(Self::R4); // R4
-            }
-        }
-
-        macro_rules! ROUND {
-            ($r:tt) => {
-                G!($r, 0, v[ 0], v[ 4], v[ 8], v[12]);
-                G!($r, 1, v[ 1], v[ 5], v[ 9], v[13]);
-                G!($r, 2, v[ 2], v[ 6], v[10], v[14]);
-                G!($r, 3, v[ 3], v[ 7], v[11], v[15]);
-                G!($r, 4, v[ 0], v[ 5], v[10], v[15]);
-                G!($r, 5, v[ 1], v[ 6], v[11], v[12]);
-                G!($r, 6, v[ 2], v[ 7], v[ 8], v[13]);
-                G!($r, 7, v[ 3], v[ 4], v[ 9], v[14]);
-            }
-        }
-
-        ROUND!(0);
-        ROUND!(1);
-        ROUND!(2);
-        ROUND!(3);
-        ROUND!(4);
-        ROUND!(5);
-        ROUND!(6);
-        ROUND!(7);
-        ROUND!(8);
-        ROUND!(9);
-        ROUND!(10);
-        ROUND!(11);
-
-        state[0] = state[0] ^ v[0] ^ v[ 8];
-        state[1] = state[1] ^ v[1] ^ v[ 9];
-        state[2] = state[2] ^ v[2] ^ v[10];
-        state[3] = state[3] ^ v[3] ^ v[11];
-        state[4] = state[4] ^ v[4] ^ v[12];
-        state[5] = state[5] ^ v[5] ^ v[13];
-        state[6] = state[6] ^ v[6] ^ v[14];
-        state[7] = state[7] ^ v[7] ^ v[15];
-    }
-
-    #[inline]
-    fn inc(&mut self, len: usize) {
-        // BLAKE2b Block Counter
-        self.t0 = self.t0.wrapping_add(len as u64);
-        if self.t0 < len as u64 {
-            self.t1 = self.t1.wrapping_add(1);
-        }
-    }
 
     pub fn update(&mut self, data: &[u8]) {
         let mut i = 0usize;
@@ -321,9 +193,10 @@ impl Blake2b {
             }
             
             if self.offset == Self::BLOCK_LEN {
-                self.inc(Self::BLOCK_LEN);
+                self.block_counter = self.block_counter.wrapping_add(Self::BLOCK_LEN as u128);
                 
-                Self::transform(&mut self.state, &self.buffer, self.t0, self.t1, self.f0, self.f1,);
+                transform(&mut self.state, &self.buffer, self.block_counter, 0);
+
                 self.offset = 0;
             }
         }
@@ -331,12 +204,8 @@ impl Blake2b {
 
     pub fn finalize(mut self, out: &mut [u8]) {
         assert_eq!(out.len(), self.hlen);
-        assert_eq!(self.f0 != 0, false);
 
-        self.inc(self.offset);
-
-        self.f0 = u64::MAX;
-        // self.f1 = u64::MAX;
+        self.block_counter = self.block_counter.wrapping_add(self.offset as u128);
 
         // Padding
         while self.offset < Self::BLOCK_LEN {
@@ -344,9 +213,9 @@ impl Blake2b {
             self.offset += 1;
         }
 
-        Self::transform(&mut self.state, &self.buffer, self.t0, self.t1, self.f0, self.f1);
+        transform(&mut self.state, &self.buffer, self.block_counter, u64::MAX as u128);
 
-        let mut hash = [0u8; Self::H_MAX];
+        let mut hash = [0u8; Self::H_MAX]; // 32
         hash[ 0.. 8].copy_from_slice(&self.state[0].to_le_bytes());
         hash[ 8..16].copy_from_slice(&self.state[1].to_le_bytes());
         hash[16..24].copy_from_slice(&self.state[2].to_le_bytes());
