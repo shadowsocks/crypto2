@@ -52,7 +52,7 @@ mod generic;
 mod x86;
 
 
-use self::generic::transform;
+use self::x86::transform;
 
 
 /// BLAKE2b-224
