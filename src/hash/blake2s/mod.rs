@@ -35,25 +35,36 @@
 //                G Rotation   | (R1, R2, R3, R4) | (R1, R2, R3, R4) |
 //                 constants = | (32, 24, 16, 63) | (16, 12,  8,  7) |
 //               --------------+------------------+------------------+
-const BLAKE2S_IV: [u32; 8] = [
-    0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 
-    0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19, 
-];
-
-
-mod generic;
-#[cfg(all(
-    any(target_arch = "x86", target_arch = "x86_64"),
-    target_feature = "sse2",
-))]
-mod x86;
+const BLAKE2S_IV: [u32; 8]     = [ 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 ];
+// IV XOR ParamBlock
+const BLAKE2S_224_IV: [u32; 8] = [ 0x6b08e67b, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 ];
+// IV XOR ParamBlock
+const BLAKE2S_256_IV: [u32; 8] = [ 0x6b08e647, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 ];
 
 
 #[cfg(all(
     any(target_arch = "x86", target_arch = "x86_64"),
     target_feature = "sse2",
 ))]
-use self::x86::transform;
+#[path = "./x86/mod.rs"]
+mod platform;
+
+// #[cfg(all(target_arch = "aarch64", target_feature = "crypto"))]
+// #[path = "./aarch64.rs"]
+// mod platform;
+
+#[cfg(not(any(
+    all(
+        any(target_arch = "x86", target_arch = "x86_64"),
+        target_feature = "sse2",
+    ),
+    all(target_arch = "aarch64", target_feature = "crypto")
+)))]
+#[path = "./generic.rs"]
+mod platform;
+
+pub use self::platform::*;
+
 
 
 /// BLAKE2s-224
@@ -63,208 +74,87 @@ pub fn blake2s_224<T: AsRef<[u8]>>(data: T) -> [u8; Blake2s224::DIGEST_LEN] {
 
 /// BLAKE2s-256
 pub fn blake2s_256<T: AsRef<[u8]>>(data: T) -> [u8; Blake2s256::DIGEST_LEN] {
-    // Blake2s256::oneshot(data)
-    
-    // NOTE: 后续所有的 摘要函数 的 oneshot 都应该避免使用 流式写法。（流式写法在 Update 时的 Copy 非常低效，在大部分场景里面也无必要）
-    let data = data.as_ref();
-
-    // parameter block
-    // digest_length, key_length, fanout, depth
-    let p1 = u32::from_le_bytes([32, 0, 1, 1]);
-
-    // IV XOR ParamBlock
-    let s1 = BLAKE2S_IV[0] ^ p1;
-    let mut state: [u32; 8] = [
-        // H
-        s1,          BLAKE2S_IV[1], 
-        BLAKE2S_IV[2], BLAKE2S_IV[3],
-        BLAKE2S_IV[4], BLAKE2S_IV[5], 
-        BLAKE2S_IV[6], BLAKE2S_IV[7],
-    ];
-
-    let mut block_counter = 0u64;
-    
-    let chunks = data.chunks_exact(Blake2s256::BLOCK_LEN);
-    let rem = chunks.remainder();
-
-    for chunk in chunks {
-        block_counter = block_counter.wrapping_add(Blake2s256::BLOCK_LEN as u64);
-        transform(&mut state, chunk, block_counter, 0);
-    }
-
-    let rlen = rem.len();
-    
-    let mut block = [0u8; Blake2s256::BLOCK_LEN];
-    if rlen > 0 {
-        block[..rlen].copy_from_slice(&rem);
-    }
-
-    block_counter = block_counter.wrapping_add(rlen as u64);
-    transform(&mut state, &block, block_counter, u32::MAX as u64);
-
-    let mut hash = [0u8; Blake2s::H_MAX]; // 32
-    hash[ 0.. 4].copy_from_slice(&state[0].to_le_bytes());
-    hash[ 4.. 8].copy_from_slice(&state[1].to_le_bytes());
-    hash[ 8..12].copy_from_slice(&state[2].to_le_bytes());
-    hash[12..16].copy_from_slice(&state[3].to_le_bytes());
-    hash[16..20].copy_from_slice(&state[4].to_le_bytes());
-    hash[20..24].copy_from_slice(&state[5].to_le_bytes());
-    hash[24..28].copy_from_slice(&state[6].to_le_bytes());
-    hash[28..32].copy_from_slice(&state[7].to_le_bytes());
-
-    hash
+    Blake2s256::oneshot(data)
 }
 
-macro_rules! impl_blake2s_fixed_output {
-    ($name:tt, $hlen:tt) => {
-        #[derive(Clone)]
-        pub struct $name {
-            inner: Blake2s,
-        }
 
-        impl $name {
-            pub const BLOCK_LEN: usize  = Blake2s::BLOCK_LEN;
-            pub const DIGEST_LEN: usize = $hlen;
-
-
-            #[inline]
-            pub fn new() -> Self {
-                Self { inner: Blake2s::new(b"", $hlen) }
-            }
-
-            #[inline]
-            pub fn update(&mut self, data: &[u8]) {
-                self.inner.update(data)
-            }
-
-            #[inline]
-            pub fn finalize(self) -> [u8; Self::DIGEST_LEN] {
-                let mut digest = [0u8; Self::DIGEST_LEN];
-                self.inner.finalize(&mut digest);
-                digest
-            }
-
-            pub fn oneshot<T: AsRef<[u8]>>(data: T) -> [u8; Self::DIGEST_LEN] {
-                let mut m = Self::new();
-                m.update(data.as_ref());
-                m.finalize()
-            }
-        }
-    }
-}
-
-// BLAKE2s-224 ( Digest length 224-bits )
-impl_blake2s_fixed_output!(Blake2s224, 28);
-// BLAKE2s-256 ( Digest length 256-bits )
-impl_blake2s_fixed_output!(Blake2s256, 32);
-
-
+/// BLAKE2s-224
 #[derive(Clone)]
-pub struct Blake2s {
-    buffer: [u8; Self::BLOCK_LEN],
-    offset: usize,
-    state: [u32; 8],
-    block_counter: u64, // T0, T1
-    hlen: usize,
+pub struct Blake2s224 {
+    inner: Blake2s
 }
 
-impl Blake2s {
-    pub const BLOCK_LEN: usize  = 64;
+impl Blake2s224 {
+    pub const BLOCK_LEN: usize  = Blake2s::BLOCK_LEN;
+    pub const DIGEST_LEN: usize = 28;
+
     
-    pub const H_MIN: usize =  1;
-    pub const H_MAX: usize = 32;
-    
-    pub const K_MIN: usize =  0;
-    pub const K_MAX: usize = 32;
-
-    pub const M_MIN: u64 = 0;
-    pub const M_MAX: u64 = u64::MAX;
-
-    pub const ROUNDS: usize = 10; // Rounds in F
-
-
-    pub fn new(key: &[u8], hlen: usize) -> Self {
-        let klen = key.len();
-
-        assert!(hlen >= Self::H_MIN && hlen <= Self::H_MAX);
-        assert!(klen >= Self::K_MIN && klen <= Self::K_MAX);
-
-        // parameter block
-        // digest_length, key_length, fanout, depth
-        let p1 = u32::from_le_bytes([ hlen as u8, klen as u8, 1, 1]);
-
-        // IV XOR ParamBlock
-        let s1 = BLAKE2S_IV[0] ^ p1;
-        let state: [u32; 8] = [
-            // H
-            s1,          BLAKE2S_IV[1], 
-            BLAKE2S_IV[2], BLAKE2S_IV[3],
-            BLAKE2S_IV[4], BLAKE2S_IV[5], 
-            BLAKE2S_IV[6], BLAKE2S_IV[7],
-        ];
-
-        let mut hasher = Self {
-            buffer: [0u8; Self::BLOCK_LEN],
-            offset: 0,
-            state,
-            block_counter: 0,
-            hlen,
-        };
-
-        if klen > 0 {
-            let mut block = [0u8; Self::BLOCK_LEN];
-            block[..klen].copy_from_slice(&key);
-
-            hasher.update(&block);
-        }
-
-        hasher
+    #[inline]
+    pub fn new() -> Self {
+        Self { inner: Blake2s::new(BLAKE2S_224_IV, b"") }
     }
 
+    #[inline]
     pub fn update(&mut self, data: &[u8]) {
-        let mut i = 0usize;
-        while i < data.len() {
-            if self.offset < Self::BLOCK_LEN {
-                self.buffer[self.offset] = data[i];
-                self.offset += 1;
-                i += 1;
-            }
-            
-            if self.offset == Self::BLOCK_LEN {
-                self.block_counter = self.block_counter.wrapping_add(Self::BLOCK_LEN as u64);
-                
-                transform(&mut self.state, &self.buffer, self.block_counter, 0);
-                self.offset = 0;
-            }
-        }
+        self.inner.update(data)
     }
 
-    pub fn finalize(mut self, out: &mut [u8]) {
-        assert_eq!(out.len(), self.hlen);
+    #[inline]
+    pub fn finalize(self) -> [u8; Self::DIGEST_LEN] {
+        let h = self.inner.finalize();
 
-        self.block_counter = self.block_counter.wrapping_add(self.offset as u64);
+        let mut digest = [0u8; Self::DIGEST_LEN];
+        digest[..Self::DIGEST_LEN].copy_from_slice(&h);
+        digest
+    }
 
-        // Padding
-        while self.offset < Self::BLOCK_LEN {
-            self.buffer[self.offset] = 0;
-            self.offset += 1;
-        }
+    #[inline]
+    pub fn oneshot<T: AsRef<[u8]>>(data: T) -> [u8; Self::DIGEST_LEN] {
+        // let mut m = Self::new();
+        // m.update(data.as_ref());
+        // m.finalize()
+        // Blake2s::oneshot_hash()
 
-        transform(&mut self.state, &self.buffer, self.block_counter, u32::MAX as u64);
+        let h = Blake2s::oneshot_hash(BLAKE2S_224_IV, data);
 
-        let mut hash = [0u8; Self::H_MAX]; // 32
-        hash[ 0.. 4].copy_from_slice(&self.state[0].to_le_bytes());
-        hash[ 4.. 8].copy_from_slice(&self.state[1].to_le_bytes());
-        hash[ 8..12].copy_from_slice(&self.state[2].to_le_bytes());
-        hash[12..16].copy_from_slice(&self.state[3].to_le_bytes());
-        hash[16..20].copy_from_slice(&self.state[4].to_le_bytes());
-        hash[20..24].copy_from_slice(&self.state[5].to_le_bytes());
-        hash[24..28].copy_from_slice(&self.state[6].to_le_bytes());
-        hash[28..32].copy_from_slice(&self.state[7].to_le_bytes());
-
-        out.copy_from_slice(&hash[..self.hlen]);
+        let mut out = [0u8; 28];
+        out.copy_from_slice(&h[..28]);
+        out
     }
 }
+
+/// BLAKE2s-256
+#[derive(Clone)]
+pub struct Blake2s256 {
+    inner: Blake2s
+}
+
+impl Blake2s256 {
+    pub const BLOCK_LEN: usize  = Blake2s::BLOCK_LEN;
+    pub const DIGEST_LEN: usize = 32;
+
+
+    #[inline]
+    pub fn new() -> Self {
+        Self { inner: Blake2s::new(BLAKE2S_256_IV, b"") }
+    }
+
+    #[inline]
+    pub fn update(&mut self, data: &[u8]) {
+        self.inner.update(data)
+    }
+
+    #[inline]
+    pub fn finalize(self) -> [u8; Self::DIGEST_LEN] {
+        self.inner.finalize()
+    }
+
+    #[inline]
+    pub fn oneshot<T: AsRef<[u8]>>(data: T) -> [u8; Self::DIGEST_LEN] {
+        Blake2s::oneshot_hash(BLAKE2S_256_IV, data)
+    }
+}
+
 
 
 #[test]
