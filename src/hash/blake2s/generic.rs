@@ -1,6 +1,4 @@
 use super::BLAKE2S_IV;
-use super::BLAKE2S_224_IV;
-use super::BLAKE2S_256_IV;
 
 
 const SIGMA: [[u8; 16]; 12] = [
@@ -112,7 +110,6 @@ pub struct Blake2s {
     offset: usize,
     state: [u32; 8],
     counter: u64, // T0, T1
-    hlen: usize,
 }
 
 impl Blake2s {
@@ -131,42 +128,56 @@ impl Blake2s {
 
 
     #[inline]
-    pub fn new(key: &[u8], hlen: usize) -> Self {
+    pub fn new(iv:[u32; 8], key: &[u8]) -> Self {
         let klen = key.len();
 
-        assert!(hlen >= Self::H_MIN && hlen <= Self::H_MAX);
+        // assert!(hlen >= Self::H_MIN && hlen <= Self::H_MAX);
         assert!(klen >= Self::K_MIN && klen <= Self::K_MAX);
 
-        // parameter block
-        // digest_length, key_length, fanout, depth
-        let p1 = u32::from_le_bytes([ hlen as u8, klen as u8, 1, 1]);
+        // // parameter block
+        // // digest_length, key_length, fanout, depth
+        // let p1 = u32::from_le_bytes([ hlen as u8, klen as u8, 1, 1]);
 
-        // IV XOR ParamBlock
-        let s1 = BLAKE2S_IV[0] ^ p1;
-        let state: [u32; 8] = [
-            // H
-            s1,          BLAKE2S_IV[1], 
-            BLAKE2S_IV[2], BLAKE2S_IV[3],
-            BLAKE2S_IV[4], BLAKE2S_IV[5], 
-            BLAKE2S_IV[6], BLAKE2S_IV[7],
-        ];
-
-        let mut hasher = Self {
-            buffer: [0u8; Self::BLOCK_LEN],
-            offset: 0,
-            state,
-            counter: 0,
-            hlen,
-        };
-
+        // // IV XOR ParamBlock
+        // let s1 = BLAKE2S_IV[0] ^ p1;
+        // let state: [u32; 8] = [
+        //     // H
+        //     s1,          BLAKE2S_IV[1], 
+        //     BLAKE2S_IV[2], BLAKE2S_IV[3],
+        //     BLAKE2S_IV[4], BLAKE2S_IV[5], 
+        //     BLAKE2S_IV[6], BLAKE2S_IV[7],
+        // ];
+        
+        let mut offset = 0usize;
+        let mut block = [0u8; Self::BLOCK_LEN];
         if klen > 0 {
-            let mut block = [0u8; Self::BLOCK_LEN];
+            offset = klen;
             block[..klen].copy_from_slice(&key);
-
-            hasher.update(&block);
         }
 
-        hasher
+        Self {
+            buffer: block,
+            offset,
+            state: iv,
+            counter: 0u64,
+        }
+
+        // let mut hasher = Self {
+        //     buffer: [0u8; Self::BLOCK_LEN],
+        //     offset: 0,
+        //     state,
+        //     counter: 0,
+        //     hlen,
+        // };
+
+        // if klen > 0 {
+        //     let mut block = [0u8; Self::BLOCK_LEN];
+        //     block[..klen].copy_from_slice(&key);
+
+        //     hasher.update(&block);
+        // }
+
+        // hasher
     }
 
     #[inline]
@@ -190,8 +201,6 @@ impl Blake2s {
 
     #[inline]
     pub fn finalize(mut self) -> [u8; Self::H_MAX] {
-        assert_eq!(out.len(), self.hlen);
-
         self.counter = self.counter.wrapping_add(self.offset as u64);
 
         // Padding

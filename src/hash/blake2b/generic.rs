@@ -1,5 +1,5 @@
 use super::BLAKE2B_IV;
-use super::Blake2b;
+
 
 
 const SIGMA: [[u8; 16]; 12] = [
@@ -18,9 +18,40 @@ const SIGMA: [[u8; 16]; 12] = [
 ];
 
 
+macro_rules! G {
+    ($a:expr, $b:expr, $c:expr, $d:expr, $mx:expr, $my:expr) => {
+        $a = $a.wrapping_add($b).wrapping_add($mx);
+        $d = ($d ^ $a).rotate_right(32); // R1
+
+        $c = $c.wrapping_add($d);
+        $b = ($b ^ $c).rotate_right(24); // R2
+
+        $a = $a.wrapping_add($b).wrapping_add($my);
+        $d = ($d ^ $a).rotate_right(16); // R3
+
+        $c = $c.wrapping_add($d);
+        $b = ($b ^ $c).rotate_right(63); // R4
+    }
+}
+
+macro_rules! ROUND {
+    ($state:expr, $m:expr, $sigma:expr) => {
+        G!($state[ 0], $state[ 4], $state[ 8], $state[12],  $m[$sigma[ 0] as usize], $m[$sigma[ 1] as usize]);
+        G!($state[ 1], $state[ 5], $state[ 9], $state[13],  $m[$sigma[ 2] as usize], $m[$sigma[ 3] as usize]);
+        G!($state[ 2], $state[ 6], $state[10], $state[14],  $m[$sigma[ 4] as usize], $m[$sigma[ 5] as usize]);
+        G!($state[ 3], $state[ 7], $state[11], $state[15],  $m[$sigma[ 6] as usize], $m[$sigma[ 7] as usize]);
+        
+        G!($state[ 0], $state[ 5], $state[10], $state[15],  $m[$sigma[ 8] as usize], $m[$sigma[ 9] as usize]);
+        G!($state[ 1], $state[ 6], $state[11], $state[12],  $m[$sigma[10] as usize], $m[$sigma[11] as usize]);
+        G!($state[ 2], $state[ 7], $state[ 8], $state[13],  $m[$sigma[12] as usize], $m[$sigma[13] as usize]);
+        G!($state[ 3], $state[ 4], $state[ 9], $state[14],  $m[$sigma[14] as usize], $m[$sigma[15] as usize]);
+    }
+}
+
+
 
 #[inline]
-pub fn transform(state: &mut [u64; 8], block: &[u8], block_counter: u128, flags: u128) {
+fn transform(state: &mut [u64; 8], block: &[u8], counter: u128, flags: u128) {
     debug_assert_eq!(state.len(), 8);
     debug_assert_eq!(block.len(), Blake2b::BLOCK_LEN);
 
@@ -41,8 +72,8 @@ pub fn transform(state: &mut [u64; 8], block: &[u8], block_counter: u128, flags:
         ]);
     }
 
-    let t1 = (block_counter >> 64) as u64;
-    let t0 = block_counter as u64;
+    let t1 = (counter >> 64) as u64;
+    let t0 = counter as u64;
     let f1 = (flags >> 64) as u64;
     let f0 = flags as u64;
 
@@ -57,58 +88,20 @@ pub fn transform(state: &mut [u64; 8], block: &[u8], block_counter: u128, flags:
     v[14] = BLAKE2B_IV[6] ^ f0;
     v[15] = BLAKE2B_IV[7] ^ f1;
 
-    //                        (R1, R2, R3, R4)
-    // G Rotation constants = (32, 24, 16, 63)
-    const R1: u32 = 32;
-    const R2: u32 = 24;
-    const R3: u32 = 16;
-    const R4: u32 = 63;
+    // 12 Rounds
+    ROUND!(v, m, SIGMA[0]);
+    ROUND!(v, m, SIGMA[1]);
+    ROUND!(v, m, SIGMA[2]);
+    ROUND!(v, m, SIGMA[3]);
+    ROUND!(v, m, SIGMA[4]);
+    ROUND!(v, m, SIGMA[5]);
+    ROUND!(v, m, SIGMA[6]);
+    ROUND!(v, m, SIGMA[7]);
+    ROUND!(v, m, SIGMA[8]);
+    ROUND!(v, m, SIGMA[9]);
 
-    macro_rules! G {
-        ($r:expr, $i:expr, $a:expr, $b:expr, $c:expr, $d:expr) => {
-            $a = $a.wrapping_add($b).wrapping_add(m[SIGMA[$r][2 * $i + 0] as usize]);
-            $d = ($d ^ $a).rotate_right(R1); // R1
-
-            $c = $c.wrapping_add($d);
-            $b = ($b ^ $c).rotate_right(R2); // R2
-
-            $a = $a.wrapping_add($b).wrapping_add(m[SIGMA[$r][2 * $i + 1] as usize]);
-            $d = ($d ^ $a).rotate_right(R3); // R3
-
-            $c = $c.wrapping_add($d);
-            $b = ($b ^ $c).rotate_right(R4); // R4
-        }
-    }
-
-    macro_rules! ROUND {
-        ($r:tt) => {
-            G!($r, 0, v[ 0], v[ 4], v[ 8], v[12]);
-            G!($r, 1, v[ 1], v[ 5], v[ 9], v[13]);
-
-            G!($r, 2, v[ 2], v[ 6], v[10], v[14]);
-            G!($r, 3, v[ 3], v[ 7], v[11], v[15]);
-            
-
-            G!($r, 4, v[ 0], v[ 5], v[10], v[15]);
-            G!($r, 5, v[ 1], v[ 6], v[11], v[12]);
-            
-            G!($r, 6, v[ 2], v[ 7], v[ 8], v[13]);
-            G!($r, 7, v[ 3], v[ 4], v[ 9], v[14]);
-        }
-    }
-
-    ROUND!(0);
-    ROUND!(1);
-    ROUND!(2);
-    ROUND!(3);
-    ROUND!(4);
-    ROUND!(5);
-    ROUND!(6);
-    ROUND!(7);
-    ROUND!(8);
-    ROUND!(9);
-    ROUND!(10);
-    ROUND!(11);
+    ROUND!(v, m, SIGMA[10]);
+    ROUND!(v, m, SIGMA[11]);
 
     state[0] = state[0] ^ v[0] ^ v[ 8];
     state[1] = state[1] ^ v[1] ^ v[ 9];
@@ -118,4 +111,145 @@ pub fn transform(state: &mut [u64; 8], block: &[u8], block_counter: u128, flags:
     state[5] = state[5] ^ v[5] ^ v[13];
     state[6] = state[6] ^ v[6] ^ v[14];
     state[7] = state[7] ^ v[7] ^ v[15];
+}
+
+
+#[derive(Clone)]
+pub struct Blake2b {
+    buffer: [u8; Self::BLOCK_LEN],
+    offset: usize,
+    state: [u64; 8],
+    counter: u128, // T0, T1
+}
+
+impl Blake2b {
+    pub const BLOCK_LEN: usize  = 128;
+    
+    pub const H_MIN: usize =  1;
+    pub const H_MAX: usize = 64;
+    
+    pub const K_MIN: usize =  0;
+    pub const K_MAX: usize = 64;
+
+    pub const M_MIN: u128 = 0;
+    pub const M_MAX: u128 = u128::MAX;
+
+    pub const ROUNDS: usize = 12; // Rounds in F
+
+
+    #[inline]
+    pub fn new(iv:[u64; 8], key: &[u8]) -> Self {
+        let klen = key.len();
+
+        assert!(klen >= Self::K_MIN && klen <= Self::K_MAX);
+
+        let mut offset = 0usize;
+        let mut block = [0u8; Self::BLOCK_LEN];
+        if klen > 0 {
+            offset = klen;
+            block[..klen].copy_from_slice(&key);
+        }
+
+        Self {
+            buffer: block,
+            offset,
+            state: iv,
+            counter: 0u128,
+        }
+    }
+
+    // pub fn new(key: &[u8], hlen: usize) -> Self {
+    //     let klen = key.len();
+
+    //     assert!(hlen >= Self::H_MIN && hlen <= Self::H_MAX);
+    //     assert!(klen >= Self::K_MIN && klen <= Self::K_MAX);
+
+    //     // parameter block
+    //     let p1 = u64::from_le_bytes([
+    //         hlen as u8, klen as u8, 1, 1, // digest_length, key_length, fanout, depth
+    //         0, 0, 0, 0,                   // leaf_length
+    //     ]);
+
+    //     // IV XOR ParamBlock
+    //     let s1 = BLAKE2B_IV[0] ^ p1;
+    //     let state: [u64; 8] = [
+    //         // H
+    //         s1,          BLAKE2B_IV[1], 
+    //         BLAKE2B_IV[2], BLAKE2B_IV[3],
+    //         BLAKE2B_IV[4], BLAKE2B_IV[5], 
+    //         BLAKE2B_IV[6], BLAKE2B_IV[7],
+    //     ];
+
+    //     let mut hasher = Self {
+    //         buffer: [0u8; Self::BLOCK_LEN],
+    //         offset: 0,
+    //         state,
+    //         counter: 0,
+    //         hlen,
+    //     };
+
+    //     if klen > 0 {
+    //         let mut block = [0u8; Self::BLOCK_LEN];
+    //         block[..klen].copy_from_slice(&key);
+
+    //         hasher.update(&block);
+    //     }
+
+    //     hasher
+    // }
+
+    #[inline]
+    pub fn update(&mut self, data: &[u8]) {
+        let mut i = 0usize;
+        while i < data.len() {
+            if self.offset == Self::BLOCK_LEN {
+                self.counter = self.counter.wrapping_add(Self::BLOCK_LEN as u128);
+                transform(&mut self.state, &self.buffer, self.counter, 0);
+                self.offset = 0;
+            }
+
+            if self.offset < Self::BLOCK_LEN {
+                self.buffer[self.offset] = data[i];
+                self.offset += 1;
+                i += 1;
+            }
+        }
+    }
+
+    #[inline]
+    pub fn finalize(mut self) -> [u8; Self::H_MAX] {
+        self.counter = self.counter.wrapping_add(self.offset as u128);
+
+        // Padding
+        while self.offset < Self::BLOCK_LEN {
+            self.buffer[self.offset] = 0;
+            self.offset += 1;
+        }
+
+        transform(&mut self.state, &self.buffer, self.counter, u64::MAX as u128);
+
+        let mut hash = [0u8; Self::H_MAX]; // 64
+        hash[ 0.. 8].copy_from_slice(&self.state[0].to_le_bytes());
+        hash[ 8..16].copy_from_slice(&self.state[1].to_le_bytes());
+        hash[16..24].copy_from_slice(&self.state[2].to_le_bytes());
+        hash[24..32].copy_from_slice(&self.state[3].to_le_bytes());
+        hash[32..40].copy_from_slice(&self.state[4].to_le_bytes());
+        hash[40..48].copy_from_slice(&self.state[5].to_le_bytes());
+        hash[48..56].copy_from_slice(&self.state[6].to_le_bytes());
+        hash[56..64].copy_from_slice(&self.state[7].to_le_bytes());
+
+        hash
+    }
+
+    #[inline]
+    pub fn oneshot_hash<T: AsRef<[u8]>>(iv: [u64; 8], data: T) -> [u8; Self::H_MAX] {
+        Self::oneshot(iv, b"", data)
+    }
+
+    #[inline]
+    pub fn oneshot<T: AsRef<[u8]>>(iv: [u64; 8], key: &[u8], data: T) -> [u8; Self::H_MAX] {
+        let mut h = Self::new(iv, key);
+        h.update(data.as_ref());
+        h.finalize()
+    }
 }

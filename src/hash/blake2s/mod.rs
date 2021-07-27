@@ -63,6 +63,7 @@ mod platform;
 #[path = "./generic.rs"]
 mod platform;
 
+
 pub use self::platform::*;
 
 
@@ -88,7 +89,7 @@ impl Blake2s224 {
     pub const BLOCK_LEN: usize  = Blake2s::BLOCK_LEN;
     pub const DIGEST_LEN: usize = 28;
 
-    
+
     #[inline]
     pub fn new() -> Self {
         Self { inner: Blake2s::new(BLAKE2S_224_IV, b"") }

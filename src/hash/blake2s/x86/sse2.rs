@@ -34,14 +34,14 @@ macro_rules! ROUND {
         $y1:expr, $y2:expr, $y3:expr, $y4:expr, $y5:expr, $y6:expr, $y7:expr, $y8:expr
     ) => {
         VG!($va, $vb, $vc, $vd, _mm_setr_epi32($x1 as i32, $x2 as i32, $x3 as i32, $x4 as i32), _mm_setr_epi32($y1 as i32, $y2 as i32, $y3 as i32, $y4 as i32));
-        $va = _mm_shuffle_epi32($va, 0b_10_01_00_11); // _MM_SHUFFLE(2, 1, 0, 3)
-        $vd = _mm_shuffle_epi32($vd, 0b_01_00_11_10); // _MM_SHUFFLE(1, 0, 3, 2)
-        $vc = _mm_shuffle_epi32($vc, 0b_00_11_10_01); // _MM_SHUFFLE(0, 3, 2, 1)
-
+        $vb = _mm_shuffle_epi32($vb, 0b_00_11_10_01); // _MM_SHUFFLE(0, 3, 2, 1)
+        $vc = _mm_shuffle_epi32($vc, 0b_01_00_11_10); // _MM_SHUFFLE(1, 0, 3, 2)
+        $vd = _mm_shuffle_epi32($vd, 0b_10_01_00_11); // _MM_SHUFFLE(2, 1, 0, 3)
+        
         VG!($va, $vb, $vc, $vd, _mm_setr_epi32($x5 as i32, $x6 as i32, $x7 as i32, $x8 as i32), _mm_setr_epi32($y5 as i32, $y6 as i32, $y7 as i32, $y8 as i32));
-        $va = _mm_shuffle_epi32($va, 0b_00_11_10_01); // _MM_SHUFFLE(0, 3, 2, 1)
-        $vd = _mm_shuffle_epi32($vd, 0b_01_00_11_10); // _MM_SHUFFLE(1, 0, 3, 2)
-        $vc = _mm_shuffle_epi32($vc, 0b_10_01_00_11); // _MM_SHUFFLE(2, 1, 0, 3)
+        $vb = _mm_shuffle_epi32($vb, 0b_10_01_00_11); // _MM_SHUFFLE(2, 1, 0, 3)
+        $vc = _mm_shuffle_epi32($vc, 0b_01_00_11_10); // _MM_SHUFFLE(1, 0, 3, 2)
+        $vd = _mm_shuffle_epi32($vd, 0b_00_11_10_01); // _MM_SHUFFLE(0, 3, 2, 1)
     }
 }
 
@@ -65,6 +65,7 @@ pub unsafe fn transform(state: &mut [__m128i; 4], block: &[u8], counter: u64, fl
     vd = _mm_xor_si128(vd, _mm_setr_epi32(t0 as i32, t1 as i32, f0 as i32, f1 as i32));
 
     _mm_prefetch::<_MM_HINT_T0>(block.as_ptr() as *const i8);
+
     let m: &[u32] = core::slice::from_raw_parts(block.as_ptr() as *const u32, 16);
 
     // 10 Rounds
