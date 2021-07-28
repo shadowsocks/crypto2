@@ -104,6 +104,7 @@ fn transform(state: &mut [u32; 8], block: &[u8], counter: u64, flags: u64) {
 }
 
 
+/// BLAKE2s
 #[derive(Clone)]
 pub struct Blake2s {
     buffer: [u8; Self::BLOCK_LEN],

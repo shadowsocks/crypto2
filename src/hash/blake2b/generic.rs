@@ -114,6 +114,7 @@ fn transform(state: &mut [u64; 8], block: &[u8], counter: u128, flags: u128) {
 }
 
 
+/// BLAKE2b
 #[derive(Clone)]
 pub struct Blake2b {
     buffer: [u8; Self::BLOCK_LEN],

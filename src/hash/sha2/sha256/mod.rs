@@ -5,24 +5,24 @@
 use core::convert::TryFrom;
 
 
-#[allow(dead_code)]
-mod generic;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-mod x86;
-#[cfg(target_arch = "aarch64")]
-mod aarch64;
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sha"))]
+#[path = "./x86.rs"]
+mod platform;
 
-// Round constants
-const K32: [u32; 64] = [
-    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 
-    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 
-    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 
-    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 
-    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 
-    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 
-    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 
-    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2, 
-];
+// FEAT_SHA1 & FEAT_SHA256 (SHA1 & SHA2-256 instructions)
+#[cfg(all(target_arch = "aarch64", target_feature = "sha2"))]
+#[path = "./aarch64.rs"]
+mod platform;
+
+#[cfg(all(
+    not(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sha")),
+    not(all(target_arch = "aarch64", target_feature = "sha2")),
+))]
+#[path = "./generic.rs"]
+mod platform;
+
+use self::platform::transform;
+
 
 const INITIAL_STATE: [u32; 8] = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
@@ -40,50 +40,6 @@ pub fn sha256<T: AsRef<[u8]>>(data: T) -> [u8; Sha256::DIGEST_LEN] {
     Sha256::oneshot(data)
 }
 
-
-// NOTE: 直接使用 SHA-NI 来加速。
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sha"))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    x86::transform(state, block)
-}
-
-// NOTE: 当编译时，没有开启 `+sha` 指令时，通过 Runtime 来判断
-//       这样，会有性能损失。后面需要考虑是否有更好的方式。
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(target_feature = "sha")))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    if is_x86_feature_detected!("sha") {
-        x86::transform(state, block)
-    } else {
-        generic::transform(state, block)
-    }
-}
-
-
-#[cfg(all(target_arch = "aarch64", target_feature = "crypto"))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    aarch64::transform(state, block)
-}
-#[cfg(all(target_arch = "aarch64", not(target_feature = "crypto")))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    generic::transform(state, block)
-}
-
-
-// Other platform (e.g: MIPS)
-#[cfg(all(
-    not(any(target_arch = "x86", target_arch = "x86_64")),
-    not(target_arch = "aarch64"),
-))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    generic::transform(state, block)
-}
-
-
 /// A 224-bit One-way Hash Function: SHA-224
 /// 
 /// <https://tools.ietf.org/html/rfc3874>
@@ -97,6 +53,7 @@ impl Sha224 {
     pub const DIGEST_LEN: usize = 28;
 
 
+    #[inline]
     pub fn new() -> Self {
         const SHA_224_INITIAL_STATE: [u32; 8] = [
             0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 
@@ -113,16 +70,19 @@ impl Sha224 {
         }
     }
 
+    #[inline]
     pub fn update(&mut self, data: &[u8]) {
         self.inner.update(data);
     }
 
+    #[inline]
     pub fn finalize(self) -> [u8; Self::DIGEST_LEN] {
         let mut digest = [0u8; Self::DIGEST_LEN];
         digest.copy_from_slice(&self.inner.finalize()[..Self::DIGEST_LEN]);
         digest
     }
 
+    #[inline]
     pub fn oneshot<T: AsRef<[u8]>>(data: T) -> [u8; Self::DIGEST_LEN] {
         let mut m = Self::new();
         m.update(data.as_ref());
@@ -150,7 +110,8 @@ impl Sha256 {
     const MAX_PAD_LEN: usize    = Self::BLOCK_LEN + Self::MLEN_SIZE as usize;
 
 
-    pub fn new() -> Self {
+    #[inline]
+    pub const fn new() -> Self {
         Self {
             buffer: [0u8; 64],
             state: INITIAL_STATE,
@@ -159,7 +120,26 @@ impl Sha256 {
         }
     }
 
+    #[inline]
     pub fn update(&mut self, data: &[u8]) {
+        if self.offset == 0 {
+            let chunks = data.chunks_exact(Self::BLOCK_LEN);
+            let rem = chunks.remainder();
+            let rlen = rem.len();
+
+            for chunk in chunks {
+                transform(&mut self.state, &chunk);
+                self.len += Self::BLOCK_LEN as u64;
+            }
+
+            if rlen > 0 {
+                self.buffer[..rlen].copy_from_slice(rem);
+                self.offset = rlen;
+            }
+
+            return ();
+        }
+
         let mut i = 0usize;
         while i < data.len() {
             if self.offset < Self::BLOCK_LEN {
@@ -176,6 +156,7 @@ impl Sha256 {
         }
     }
 
+    #[inline]
     pub fn finalize(mut self) -> [u8; Self::DIGEST_LEN] {
         // 5. PREPROCESSING 
         //   5.1 Padding the Message 
@@ -199,7 +180,7 @@ impl Sha256 {
         debug_assert_eq!(plen_bits % 8, 0);
         debug_assert!(plen > 1);
         debug_assert_eq!((mlen + plen + Self::MLEN_SIZE as u64) % Self::BLOCK_LEN as u64, 0);
-
+        
         // NOTE: MAX_PAD_LEN 是一个很小的数字，所以这里可以安全的 unwrap.
         let plen = usize::try_from(plen).unwrap();
 
@@ -228,6 +209,7 @@ impl Sha256 {
         output
     }
     
+    #[inline]
     pub fn oneshot<T: AsRef<[u8]>>(data: T) -> [u8; Self::DIGEST_LEN] {
         let mut m = Self::new();
         m.update(data.as_ref());

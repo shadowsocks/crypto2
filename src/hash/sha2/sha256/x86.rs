@@ -1,9 +1,9 @@
-use super::Sha256;
-
 #[cfg(target_arch = "x86")]
 use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
+
+use super::Sha256;
 
 
 // Intel® Architecture Instruction Set Extensions ProgrammingReference
@@ -11,6 +11,7 @@ use core::arch::x86_64::*;
 // CHAPTER 8 INTEL® SHA EXTENSIONS
 // https://software.intel.com/sites/default/files/managed/07/b7/319433-023.pdf
 
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sha"))]
 #[inline]
 pub fn transform(state: &mut [u32; 8], block: &[u8]) {
     // https://docs.rs/sha2ni/0.8.5/src/sha2ni/sha256_intrinsics.rs.html

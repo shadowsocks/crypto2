@@ -24,6 +24,7 @@ mod feature;
 use self::feature::*;
 
 
+/// BLAKE2s
 #[derive(Clone)]
 pub struct Blake2s {
     buffer: [u8; Self::BLOCK_LEN],
