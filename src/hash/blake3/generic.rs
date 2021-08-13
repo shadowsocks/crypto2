@@ -1,10 +1,5 @@
 #![allow(unused_mut, dead_code)]
 
-const IV: [u32; 8] = [
-    0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 
-    0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19, 
-];
-
 // Table 3: Admissible values for input d in the BLAKE3 compression function.
 //     ------------------  ------
 //     Flag name           Value
@@ -26,6 +21,25 @@ const KEYED_HASH: u32          = 16;
 const DERIVE_KEY_CONTEXT: u32  = 32;
 const DERIVE_KEY_MATERIAL: u32 = 64;
 
+// Table 2: Permutational key schedule for BLAKE3’s keyed permutation.
+// 2,  6,  3, 10, 7,  0,  4, 13, 
+// 1, 11, 12,  5, 9, 14, 15,  8, 
+const SIGMA: [[u8; 16]; 7] = [
+    [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15], 
+    [ 2,  6,  3, 10,  7,  0,  4, 13,  1, 11, 12,  5,  9, 14, 15,  8], 
+    [ 3,  4, 10, 12, 13,  2,  7, 14,  6,  5,  9,  0, 11, 15,  8,  1], 
+    [10,  7, 12,  9, 14,  3, 13, 15,  4,  0, 11,  2,  5,  8,  1,  6], 
+    [12, 13,  9, 11, 15, 10, 14,  8,  7,  2,  5,  3,  0,  1,  6,  4], 
+    [ 9, 14, 11,  5,  8, 12, 15,  1, 13,  3,  0, 10,  2,  6,  4,  7], 
+    [11, 15,  5,  0,  1,  9,  8,  6, 14, 10,  2, 12,  3,  4,  7, 13], 
+];
+
+const IV: [u32; 8] = [
+    0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 
+    0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19, 
+];
+
+
 // The mixing function, G, which mixes either a column or a diagonal.
 macro_rules! G {
     ($a:expr, $b:expr, $c:expr, $d:expr, $mx:expr, $my:expr) => {
@@ -44,84 +58,21 @@ macro_rules! G {
 }
 
 macro_rules! ROUND {
-    ($state:tt, $m:tt) => {
+    ($state:tt, $m:tt, $sigma:expr) => {
         // Mix the columns
-        G!($state[ 0], $state[ 4], $state[ 8], $state[12],  $m[ 0], $m[ 1]);
-        G!($state[ 1], $state[ 5], $state[ 9], $state[13],  $m[ 2], $m[ 3]);
-        G!($state[ 2], $state[ 6], $state[10], $state[14],  $m[ 4], $m[ 5]);
-        G!($state[ 3], $state[ 7], $state[11], $state[15],  $m[ 6], $m[ 7]);
+        G!($state[ 0], $state[ 4], $state[ 8], $state[12],  $m[$sigma[ 0] as usize], $m[$sigma[ 1] as usize]);
+        G!($state[ 1], $state[ 5], $state[ 9], $state[13],  $m[$sigma[ 2] as usize], $m[$sigma[ 3] as usize]);
+        G!($state[ 2], $state[ 6], $state[10], $state[14],  $m[$sigma[ 4] as usize], $m[$sigma[ 5] as usize]);
+        G!($state[ 3], $state[ 7], $state[11], $state[15],  $m[$sigma[ 6] as usize], $m[$sigma[ 7] as usize]);
         // Mix the diagonals
-        G!($state[ 0], $state[ 5], $state[10], $state[15],  $m[ 8], $m[ 9]);
-        G!($state[ 1], $state[ 6], $state[11], $state[12],  $m[10], $m[11]);
-        G!($state[ 2], $state[ 7], $state[ 8], $state[13],  $m[12], $m[13]);
-        G!($state[ 3], $state[ 4], $state[ 9], $state[14],  $m[14], $m[15]);
+        G!($state[ 0], $state[ 5], $state[10], $state[15],  $m[$sigma[ 8] as usize], $m[$sigma[ 9] as usize]);
+        G!($state[ 1], $state[ 6], $state[11], $state[12],  $m[$sigma[10] as usize], $m[$sigma[11] as usize]);
+        G!($state[ 2], $state[ 7], $state[ 8], $state[13],  $m[$sigma[12] as usize], $m[$sigma[13] as usize]);
+        G!($state[ 3], $state[ 4], $state[ 9], $state[14],  $m[$sigma[14] as usize], $m[$sigma[15] as usize]);
     }
 }
 
-macro_rules! ROUND_AND_SHUFFLE {
-    ($state:tt, $m:tt, $m_copy:tt) => {
-        ROUND!($state, $m);
 
-        // Table 2: Permutational key schedule for BLAKE3’s keyed permutation.
-        // 2,  6,  3, 10, 7,  0,  4, 13, 
-        // 1, 11, 12,  5, 9, 14, 15,  8, 
-        $m_copy[ 0] = $m[ 2];
-        $m_copy[ 1] = $m[ 6];
-        $m_copy[ 2] = $m[ 3];
-        $m_copy[ 3] = $m[10];
-        $m_copy[ 4] = $m[ 7];
-        $m_copy[ 5] = $m[ 0];
-        $m_copy[ 6] = $m[ 4];
-        $m_copy[ 7] = $m[13];
-        $m_copy[ 8] = $m[ 1];
-        $m_copy[ 9] = $m[11];
-        $m_copy[10] = $m[12];
-        $m_copy[11] = $m[ 5];
-        $m_copy[12] = $m[ 9];
-        $m_copy[13] = $m[14];
-        $m_copy[14] = $m[15];
-        $m_copy[15] = $m[ 8];
-    }
-}
-
-macro_rules! ROUNDS {
-    ($state:tt, $m:tt, $m_copy:tt) => {
-        // println!("        state: {:?}", &$state);
-        // Round-1
-        ROUND_AND_SHUFFLE!($state, $m, $m_copy);
-
-        // println!("        state: {:?}", &$state);
-        // Round-2
-        ROUND_AND_SHUFFLE!($state, $m_copy, $m);
-
-        // Round-3
-        ROUND_AND_SHUFFLE!($state, $m, $m_copy);
-        // Round-4
-        ROUND_AND_SHUFFLE!($state, $m_copy, $m);
-
-        // Round-5
-        ROUND_AND_SHUFFLE!($state, $m, $m_copy);
-        // Round-6
-        ROUND_AND_SHUFFLE!($state, $m_copy, $m);
-        
-        // Round-7
-        ROUND!($state, $m);
-    }
-}
-
-#[inline]
-fn u32x8_from_le_bytes(bytes: &[u8]) -> [u32; 8] {
-    let mut m = [0u32; 8];
-    m[ 0] = u32::from_le_bytes([bytes[ 0], bytes[ 1], bytes[ 2], bytes[ 3] ]);
-    m[ 1] = u32::from_le_bytes([bytes[ 4], bytes[ 5], bytes[ 6], bytes[ 7] ]);
-    m[ 2] = u32::from_le_bytes([bytes[ 8], bytes[ 9], bytes[10], bytes[11] ]);
-    m[ 3] = u32::from_le_bytes([bytes[12], bytes[13], bytes[14], bytes[15] ]);
-    m[ 4] = u32::from_le_bytes([bytes[16], bytes[17], bytes[18], bytes[19] ]);
-    m[ 5] = u32::from_le_bytes([bytes[20], bytes[21], bytes[22], bytes[23] ]);
-    m[ 6] = u32::from_le_bytes([bytes[24], bytes[25], bytes[26], bytes[27] ]);
-    m[ 7] = u32::from_le_bytes([bytes[28], bytes[29], bytes[30], bytes[31] ]);
-    m
-}
 
 #[inline]
 fn u32x16_from_le_bytes(bytes: &[u8]) -> [u32; 16] {
@@ -167,11 +118,22 @@ fn u32x16_to_le_bytes(words: &[u32]) -> [u8; 64] {
     bytes
 }
 
+fn transform_half(chaining_value: &[u32; 8], block: &[u32; 16], counter: u64, flags: u32, blen: u32) -> [u32; 8] {
+    let mut out = [0u32; 8];
+    let state = transform(chaining_value, block, counter, flags, blen);
+    out.copy_from_slice(&state[..8]);
+    out
+}
+
+fn transform_full(chaining_value: &[u32; 8], block: &[u32; 16], counter: u64, flags: u32, blen: u32) -> [u32; 16] {
+    transform(chaining_value, block, counter, flags, blen)
+}
+
+
 #[inline]
-fn transform(chaining_value: &[u32; 8], block: &[u32; 16], block_len: usize, counter: u64, flags: u32) -> [u32; 16] {
-    let mut m = block.clone();
+fn transform(chaining_value: &[u32; 8], block: &[u32; 16], counter: u64, flags: u32, blen: u32) -> [u32; 16] {
     let mut v = [0u32; 16];
-    let mut m_copy = [0u32; 16];
+    let m = block;
 
     v[..8].copy_from_slice(&chaining_value[..]);
 
@@ -179,13 +141,19 @@ fn transform(chaining_value: &[u32; 8], block: &[u32; 16], block_len: usize, cou
     v[ 9] = IV[1];
     v[10] = IV[2];
     v[11] = IV[3];
-    v[12] = counter as u32;         // ^ T0
-    v[13] = (counter >> 32) as u32; // ^ T1
-    v[14] = block_len as u32;
-    v[15] = flags;
+    v[12] = counter as u32;         // T0
+    v[13] = (counter >> 32) as u32; // T1
+    v[14] = blen;                   // F0
+    v[15] = flags;                  // F1
 
     // 7 Rounds
-    ROUNDS!(v, m, m_copy);
+    ROUND!(v, m, SIGMA[0]);
+    ROUND!(v, m, SIGMA[1]);
+    ROUND!(v, m, SIGMA[2]);
+    ROUND!(v, m, SIGMA[3]);
+    ROUND!(v, m, SIGMA[4]);
+    ROUND!(v, m, SIGMA[5]);
+    ROUND!(v, m, SIGMA[6]);
 
     v[0] ^= v[ 8]; v[ 8] ^= chaining_value[0];
     v[1] ^= v[ 9]; v[ 9] ^= chaining_value[1];
@@ -200,157 +168,33 @@ fn transform(chaining_value: &[u32; 8], block: &[u32; 16], block_len: usize, cou
 }
 
 
-#[cfg(test)]
-#[bench]
-fn bench_blake3_transform(b: &mut test::Bencher) {
-    let key   = [7u32; 8];
-    let block = [9u32; 16];
-    let block_len = 64;
-    let counter = 1;
-    let flags = 4;
-
-    b.iter(|| {
-        transform(&key, &block, block_len, counter, flags)
-    })
-}
-
-
-
-#[cfg(test)]
-#[bench]
-fn bench_blake3_u32x16_from_le_bytes(b: &mut test::Bencher) {
-    let bytes = [1u8; 64];
-
-    b.iter(|| {
-        u32x16_from_le_bytes(&bytes)
-    })
-}
-
-
-// 2.5 Parent Node Chaining Values
-// 
-// Each parent node has exactly two children, 
-// each either a chunk or another parent node. 
-// 
-// The chaining value of each parent node is given by a single call to the compression function. 
-// The input chaining value h0 ... h7 is the key words k0 ... k7. 
-// The message words m0 ... m7 are the chaining value of the left child, 
-// and the message words m8 ... m15 are the chaining value of the right child.
-#[derive(Clone)]
-struct ParentNode {
-    key_words: [u32; 8],
-    block_words: [u32; 16],
-    flags: u32,
-}
-
-impl ParentNode {
-    pub fn new(key_words: [u32; 8], left_child: &[u32; 8], right_child: &[u32; 8], flags: u32) -> Self {
-        let mut block_words = [0u32; 16];
-        block_words[0.. 8].copy_from_slice(left_child);
-        block_words[8..16].copy_from_slice(right_child);
-
-        Self {
-            key_words,
-            block_words,
-            flags: flags | PARENT,
-        }
-    }
-
-    pub fn chaining_value(self) -> [u32; 8] {
-        // NOTE: 
-        //      1. Counter always 0 for parent nodes.
-        //      2. Always BLOCK_LEN (64) for parent nodes.
-        let out = transform(&self.key_words, &self.block_words, Blake3::BLOCK_LEN, 0, self.flags);
-        let mut cv = [0u32; 8];
-        cv.copy_from_slice(&out[..8]);
-        cv
-    }
-
-    pub fn root_node(&self) -> RootNode {
-        RootNode {
-            key_words: self.key_words,
-            block_words: self.block_words,
-            block_len: Blake3::BLOCK_LEN,
-            flags: self.flags,
-        }
-    }
-}
-
-
-#[derive(Clone)]
-struct RootNode {
-    key_words: [u32; 8],
-    block_words: [u32; 16],
-    block_len: usize,
-    flags: u32,
-}
-
-impl RootNode {
-    pub fn root(mut self, out_slice: &mut [u8]) {
-        let flags       = self.flags | ROOT;
-
-        let mut counter = 0u64;
-        for out_block in out_slice.chunks_mut(Blake3::BLOCK_LEN) {
-            let state = transform(&self.key_words, &self.block_words, self.block_len, counter, flags);
-            let stream = u32x16_to_le_bytes(&state);
-
-            let olen = out_block.len();
-            out_block.copy_from_slice(&stream[..olen]);
-            // if out_block.len() == Blake3::BLOCK_LEN {
-            //     out_block.copy_from_slice(&stream);
-            // } else {
-                
-            // }
-            
-            counter += 1;
-        }
-    }
-}
-
 struct Node {
     key_words: [u32; 8],
     block_words: [u32; 16],
-    block_len: usize,
+    block_len: u32,
     counter: u64,
     flags: u32,
 }
 
 impl Node {
     pub fn chaining_value(&self) -> [u32; 8] {
-        let out = transform(&self.key_words, &self.block_words, self.block_len, self.counter, self.flags);
-        let mut cv = [0u32; 8];
-        cv.copy_from_slice(&out[..8]);
-        cv
+        transform_half(&self.key_words, &self.block_words, self.counter, self.flags, self.block_len)
     }
 
     pub fn root(&mut self, digest: &mut [u8]) {
-        // let mut node = RootNode {
-        //     key_words: self.key_words,
-        //     block_words: self.block_words,
-        //     block_len: self.block_len,
-        //     flags: self.flags,
-        // };
-        // node.root(digest);
-
-        let flags       = self.flags | ROOT;
-
+        let flags = self.flags | ROOT;
         let mut counter = 0u64;
+
         for out_block in digest.chunks_mut(Blake3::BLOCK_LEN) {
-            let state = transform(&self.key_words, &self.block_words, self.block_len, counter, flags);
+            let state = transform_full(&self.key_words, &self.block_words, counter, flags, self.block_len);
             let stream = u32x16_to_le_bytes(&state);
 
             let olen = out_block.len();
             out_block.copy_from_slice(&stream[..olen]);
-            // if out_block.len() == Blake3::BLOCK_LEN {
-            //     out_block.copy_from_slice(&stream);
-            // } else {
-                
-            // }
             
+            // WARN: 是否使用 wrapping_add 来避免当 输入的数据超出设计范围时的 Panic ?
             counter += 1;
         }
-
-        
     }
 }
 
@@ -373,24 +217,36 @@ pub struct Blake3 {
 
 impl Blake3 {
     pub const BLOCK_LEN: usize  = 64;
-    pub const DIGEST_LEN: usize = 32;
-
     pub const KEY_LEN: usize    = 32;
     pub const CHUNK_LEN: usize  = 1024;
 
     const BLOCK_ZERO: [u8; Self::BLOCK_LEN] = [0u8; Self::BLOCK_LEN];
+    const CHUNK_LAST_BLOCK_START: usize = Self::CHUNK_LEN - Self::BLOCK_LEN; // 1024 - 64
 
 
+    #[inline]
     pub fn new() -> Self {
         Self::new_(IV, 0)
     }
 
+    #[inline]
     pub fn with_keyed(key: &[u8]) -> Self {
         debug_assert_eq!(key.len(), Self::KEY_LEN);
 
-        Self::new_(u32x8_from_le_bytes(key), KEYED_HASH)
+        let mut iv = [0u32; 8];
+        iv[ 0] = u32::from_le_bytes([key[ 0], key[ 1], key[ 2], key[ 3] ]);
+        iv[ 1] = u32::from_le_bytes([key[ 4], key[ 5], key[ 6], key[ 7] ]);
+        iv[ 2] = u32::from_le_bytes([key[ 8], key[ 9], key[10], key[11] ]);
+        iv[ 3] = u32::from_le_bytes([key[12], key[13], key[14], key[15] ]);
+        iv[ 4] = u32::from_le_bytes([key[16], key[17], key[18], key[19] ]);
+        iv[ 5] = u32::from_le_bytes([key[20], key[21], key[22], key[23] ]);
+        iv[ 6] = u32::from_le_bytes([key[24], key[25], key[26], key[27] ]);
+        iv[ 7] = u32::from_le_bytes([key[28], key[29], key[30], key[31] ]);
+
+        Self::new_(iv, KEYED_HASH)
     }
 
+    #[inline]
     pub fn new_derive_key<S: AsRef<[u8]>>(context: S) -> Self {
         let context = context.as_ref();
 
@@ -400,9 +256,17 @@ impl Blake3 {
         let mut context_key = [0u8; Self::KEY_LEN];
         hasher.finalize(&mut context_key);
 
-        let key_words = u32x8_from_le_bytes(&context_key);
+        let mut iv = [0u32; 8];
+        iv[ 0] = u32::from_le_bytes([context_key[ 0], context_key[ 1], context_key[ 2], context_key[ 3] ]);
+        iv[ 1] = u32::from_le_bytes([context_key[ 4], context_key[ 5], context_key[ 6], context_key[ 7] ]);
+        iv[ 2] = u32::from_le_bytes([context_key[ 8], context_key[ 9], context_key[10], context_key[11] ]);
+        iv[ 3] = u32::from_le_bytes([context_key[12], context_key[13], context_key[14], context_key[15] ]);
+        iv[ 4] = u32::from_le_bytes([context_key[16], context_key[17], context_key[18], context_key[19] ]);
+        iv[ 5] = u32::from_le_bytes([context_key[20], context_key[21], context_key[22], context_key[23] ]);
+        iv[ 6] = u32::from_le_bytes([context_key[24], context_key[25], context_key[26], context_key[27] ]);
+        iv[ 7] = u32::from_le_bytes([context_key[28], context_key[29], context_key[30], context_key[31] ]);
 
-        Self::new_(key_words, DERIVE_KEY_MATERIAL)
+        Self::new_(iv, DERIVE_KEY_MATERIAL)
     }
 
     #[inline]
@@ -424,92 +288,99 @@ impl Blake3 {
         }
     }
 
-    pub fn update(&mut self, data: &[u8]) {
-        let mut i = 0usize;
-        while i < data.len() {
-            // the block buffer is full, compress input bytes into the current chunk state.
-            if self.offset == Self::BLOCK_LEN   {
-                // current chunk is complete, finalize it and reset the chunk state.
-                const LEN: usize = 1024 - 64;
-                if self.chunk_len == LEN {
-                    let block_words = u32x16_from_le_bytes(&self.buffer);
-                    let block_len   = Self::BLOCK_LEN;
-                    let counter     = self.chunk_counter;
-                    let flags = if self.chunk_block_counter == 0 { self.flags | CHUNK_START | CHUNK_END } else { self.flags | CHUNK_END };
+    fn process_block(&mut self) {
+        // debug_assert_eq!(block.len(), Self::BLOCK_LEN);
+        debug_assert_eq!(self.offset, Self::BLOCK_LEN);
 
-                    // NOTE: 由于 CHUNK_LEN 是 BLOCK_LEN 的倍数，所以此处的 block_len ( buffer offset ) 会为 0;
-                    //       同时，由于 buffer 会被清空，所以 block words 也会为 zero block.
-                    let state = transform(&self.chunk_chaining_value, &block_words, block_len, counter, flags);
-                    
-                    let mut new_cv = [0u32; 8];
-                    new_cv.copy_from_slice(&state[..8]);
+        // Current chunk is complete, finalize it and reset the chunk state.
+        if self.chunk_len == Self::CHUNK_LAST_BLOCK_START {
+            let block_words = u32x16_from_le_bytes(&self.buffer);
+            let counter = self.chunk_counter;
+            let blen    = Self::BLOCK_LEN as u32;
+            let flags   = if self.chunk_block_counter == 0 { self.flags | CHUNK_START | CHUNK_END } else { self.flags | CHUNK_END };
 
-                    // wrapping_add ?
-                    self.chunk_counter += 1;
-                    self.chunk_chaining_value = self.key;
+            // NOTE: 由于 CHUNK_LEN 是 BLOCK_LEN 的倍数，所以此处的 block_len ( buffer offset ) 会为 0;
+            //       同时，由于 buffer 会被清空，所以 block words 也会为 zero block.
+            let mut new_cv = transform_half(&self.chunk_chaining_value, &block_words, counter, flags, blen);
 
-                    self.chunk_len           = 0;
-                    self.chunk_block_counter = 0;
+            // WARN: 是否使用 wrapping_add 来避免当 输入的数据超出设计范围时的 Panic ?
+            self.chunk_counter += 1;
+            self.chunk_chaining_value = self.key;
 
-                    self.offset = 0;
-                    self.buffer = Self::BLOCK_ZERO;
+            self.chunk_len           = 0;
+            self.chunk_block_counter = 0;
 
-                    
-                    let mut total_chunks = self.chunk_counter;
-                    // let mut new_cv = right_child;
-                    
-                    while total_chunks & 1 == 0 {
-                        self.stack_len -= 1;
+            self.offset = 0;
+            self.buffer = Self::BLOCK_ZERO;
 
-                        let left_child = self.stack[self.stack_len];
-                        // let right_child = new_cv;
-                        // new_cv = ParentNode::new(self.key, &left_child, &new_cv, self.flags).chaining_value();
-                        let mut block_words = [0u32; 16];
-                        block_words[0.. 8].copy_from_slice(&left_child);
-                        block_words[8..16].copy_from_slice(&new_cv);
+            let mut total_chunks = self.chunk_counter;
+            
+            while total_chunks & 1 == 0 {
+                self.stack_len -= 1;
+                let left_child = self.stack[self.stack_len];
 
-                        // NOTE: 
-                        //      1. Counter always 0 for parent nodes.
-                        //      2. Always BLOCK_LEN (64) for parent nodes.
-                        let out = transform(&self.key, &block_words, Blake3::BLOCK_LEN, 0, self.flags | PARENT);
-                        // let mut cv = [0u32; 8];
-                        new_cv.copy_from_slice(&out[..8]);
+                let mut block_words = [0u32; 16];
+                block_words[0.. 8].copy_from_slice(&left_child);
+                block_words[8..16].copy_from_slice(&new_cv);
 
-                        total_chunks >>= 1;
-                    }
+                // NOTE: 
+                //      1. Counter always 0 for parent nodes.
+                //      2. Always BLOCK_LEN (64) for parent nodes.
+                let counter = 0u64;
+                let blen = Self::BLOCK_LEN as u32;
+                new_cv = transform_half(&self.key, &block_words, counter, self.flags | PARENT, blen);
 
-                    self.stack[self.stack_len] = new_cv;
-                    self.stack_len += 1;
-                } else {
-                    let flags = if self.chunk_block_counter == 0 { self.flags | CHUNK_START } else { self.flags };
-                    let words = u32x16_from_le_bytes(&self.buffer);
-                    let state = transform(&self.chunk_chaining_value, &words, Self::BLOCK_LEN, self.chunk_counter, flags);
-
-                    self.chunk_chaining_value.copy_from_slice(&state[..8]);
-                    self.chunk_len           += Self::BLOCK_LEN;
-                    self.chunk_block_counter += 1;
-
-                    self.offset = 0;
-                    self.buffer = Self::BLOCK_ZERO;
-                }
+                total_chunks >>= 1;
             }
 
-            // Copy input bytes into the block buffer.            
-            if self.offset < Self::BLOCK_LEN {
-                self.buffer[self.offset] = data[i];
-                self.offset += 1;
-                i += 1;
-            }
+            self.stack[self.stack_len] = new_cv;
+            self.stack_len += 1;
+        } else {
+            let words = u32x16_from_le_bytes(&self.buffer);
+            let flags = if self.chunk_block_counter == 0 { self.flags | CHUNK_START } else { self.flags };
+            let blen = Self::BLOCK_LEN as u32;
+            self.chunk_chaining_value = transform_half(&self.chunk_chaining_value, &words, self.chunk_counter, flags, blen);
+
+            self.chunk_len           += Self::BLOCK_LEN;
+            self.chunk_block_counter += 1;
+
+            self.offset = 0;
+            self.buffer = Self::BLOCK_ZERO;
         }
     }
 
+    #[inline]
+    pub fn update(&mut self, data: &[u8]) {
+        let mut i = 0usize;
+        while i < data.len() {
+            // The block buffer is full, compress input bytes into the current chunk state.
+            if self.offset == Self::BLOCK_LEN   {
+                self.process_block();
+            }
+
+            // Copy input bytes into the block buffer.
+            let rlen = data.len() - i;
+            let n = core::cmp::min(rlen, Self::BLOCK_LEN - self.offset);
+            self.buffer[self.offset..self.offset + n].copy_from_slice(&data[i..i + n]);
+            self.offset += n;
+            i += n;
+
+            // if self.offset < Self::BLOCK_LEN {
+            //     self.buffer[self.offset] = data[i];
+            //     self.offset += 1;
+            //     i += 1;
+            // }
+        }
+    }
+
+    #[inline]
     pub fn finalize(mut self, digest: &mut [u8]) {
         let block_words = u32x16_from_le_bytes(&self.buffer);
         let flags = if self.chunk_block_counter == 0 { self.flags | CHUNK_START | CHUNK_END  } else { self.flags | CHUNK_END };
         let mut node  = Node {
             key_words: self.chunk_chaining_value,
             block_words: block_words,
-            block_len: self.offset,
+            block_len: self.offset as u32,
             counter: self.chunk_counter,
             flags,
         };
@@ -525,15 +396,24 @@ impl Blake3 {
             block_words[0.. 8].copy_from_slice(&left_child);
             block_words[8..16].copy_from_slice(&right_child);
 
+            // NOTE: 
+            //      1. Counter always 0 for parent nodes.
+            //      2. Always BLOCK_LEN (64) for parent nodes.
             node = Node {
                 key_words: self.key,
                 block_words: block_words,
-                block_len: Self::BLOCK_LEN,
+                block_len: Self::BLOCK_LEN as u32,
                 counter: 0,
                 flags: self.flags | PARENT,
             };
         }
 
         node.root(digest);
+    }
+
+    pub(crate) fn oneshot_hash_inner<T: AsRef<[u8]>>(data: T, digest: &mut [u8]) {
+        let mut hasher = Self::new();
+        hasher.update(data.as_ref());
+        hasher.finalize(digest);
     }
 }

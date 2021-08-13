@@ -381,7 +381,7 @@ fn bench_sha1(b: &mut test::Bencher) {
 fn bench_sha256(b: &mut test::Bencher) {
     use self::sha2::sha256;
 
-    let data = [1u8; 64];
+    let data = test::black_box([1u8; 64]);
     b.bytes = data.len() as u64;
     b.iter(|| {
         sha256(&data)
@@ -392,7 +392,7 @@ fn bench_sha256(b: &mut test::Bencher) {
 fn bench_sha384(b: &mut test::Bencher) {
     use self::sha2::sha384;
 
-    let data = [1u8; 64];
+    let data = test::black_box([1u8; 64]);
     b.bytes = data.len() as u64;
     b.iter(|| {
         sha384(&data)
