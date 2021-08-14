@@ -31,7 +31,6 @@ use self::feature::*;
 //     DERIVE_KEY_CONTEXT  2**5
 //     DERIVE_KEY_MATERIAL 2**6
 //     ------------------- ------
-
 const CHUNK_START: u32         =  1;
 const CHUNK_END: u32           =  2;
 const PARENT: u32              =  4;
@@ -46,18 +45,17 @@ const IV: [u32; 8] = [
 ];
 
 
-
 #[derive(Clone)]
 pub struct Blake3 {
-    initial_flags: u32,                // 初始 FLAG
-    initial_state: [__m128i; 4],       // Chunk 的初始状态数据
-
-    buf: [u8; Blake3::BLOCK_LEN],      // block
-    offset: usize,                     // block_len
+    initial_flags: u32,
+    initial_state: [__m128i; 3],
     
-    chunk_state: [__m128i; 4],         // Chunk Chainning Value
-    chunk_len: usize,                  // Chunk 内部总共已完成计算的输入数据大小
-    chunk_counter: u64,                // 已计算完毕的 Chunk 数量
+    buf: [u8; Self::BLOCK_LEN],
+    offset: usize,
+
+    chunk_len: usize,
+    chunk_counter: u64,
+    chunk_state: [__m128i; 3],
 
     stack: [[__m128i; 2]; 54],
     stack_len: usize,
@@ -78,11 +76,8 @@ impl Blake3 {
             let a = _mm_loadu_si128(IV.as_ptr().add(0) as *const __m128i);
             let b = _mm_loadu_si128(IV.as_ptr().add(4) as *const __m128i);
             let c = a;
-            let d = _mm_setzero_si128();
 
-            let initial_state = [a, b, c, d];
-
-            Self::new_(initial_state, 0)
+            Self::new_([a, b, c], 0)
         }
     }
 
@@ -93,12 +88,9 @@ impl Blake3 {
         unsafe {
             let a = _mm_loadu_si128(key.as_ptr().add( 0) as *const __m128i);
             let b = _mm_loadu_si128(key.as_ptr().add(16) as *const __m128i);
-            let c = _mm_loadu_si128(IV.as_ptr().add( 0) as *const __m128i);
-            let d = _mm_setzero_si128();
+            let c = _mm_loadu_si128( IV.as_ptr().add( 0) as *const __m128i);
 
-            let initial_state = [a, b, c, d];
-
-            Self::new_(initial_state, KEYED_HASH)
+            Self::new_([a, b, c], KEYED_HASH)
         }
     }
 
@@ -110,27 +102,21 @@ impl Blake3 {
             let a = _mm_loadu_si128(IV.as_ptr().add(0) as *const __m128i);
             let b = _mm_loadu_si128(IV.as_ptr().add(4) as *const __m128i);
             let c = a;
-            let d = _mm_setzero_si128();
-
-            let initial_state = [a, b, c, d];
-            
-            let mut hasher = Self::new_(initial_state, DERIVE_KEY_CONTEXT);
-            hasher.update(context);
 
             let mut context_key = [0u8; Self::KEY_LEN];
+            let mut hasher = Self::new_([a, b, c], DERIVE_KEY_CONTEXT);
+            hasher.update(context);
             hasher.finalize(&mut context_key);
 
             let a = _mm_loadu_si128(context_key.as_ptr().add( 0) as *const __m128i);
             let b = _mm_loadu_si128(context_key.as_ptr().add(16) as *const __m128i);
 
-            let initial_state = [a, b, c, d];
-
-            Self::new_(initial_state, DERIVE_KEY_MATERIAL)
+            Self::new_([a, b, c], DERIVE_KEY_MATERIAL)
         }
     }
 
     #[inline]
-    fn new_(initial_state: [__m128i; 4], initial_flags: u32) -> Self {
+    fn new_(initial_state: [__m128i; 3], initial_flags: u32) -> Self {
         unsafe {
             let zero = _mm_setzero_si128();
             Self {
@@ -140,51 +126,50 @@ impl Blake3 {
                 buf: Self::BLOCK_ZERO,
                 offset: 0,
 
-                chunk_state: initial_state,
                 chunk_len: 0,
-                chunk_counter: 0,
-
-                stack: [[zero; 2]; 54],
+                chunk_counter: 0u64,
+                chunk_state: initial_state,
+                
                 stack_len: 0,
+                stack: [[zero; 2]; 54],
             }
         }
     }
-
-    unsafe fn process_block(&mut self) {
-        debug_assert_eq!(self.offset, Self::BLOCK_LEN);
+    
+    unsafe fn process_block(&mut self, block: &[u8]) {
+        debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         if self.chunk_len == Self::CHUNK_LAST_BLOCK_START {
             // NOTE: 当前 Chunk 的最后一个 BLOCK.
-            let block     = &self.buf;
-            let counter   = self.chunk_counter;
-            let blen      = Self::BLOCK_LEN as u32;
-            let flags     = if self.chunk_len == 0 { self.initial_flags | CHUNK_START | CHUNK_END } else { self.initial_flags | CHUNK_END };
-
-            chaining_value_transform(&mut self.chunk_state, &block, counter, flags, blen);
+            let state   = &mut self.chunk_state;
+            let counter = self.chunk_counter;
+            let blen    = Self::BLOCK_LEN as u32;
+            let flags   = if self.chunk_len == 0 { self.initial_flags | CHUNK_START | CHUNK_END } else { self.initial_flags | CHUNK_END };
+            
+            transform_block(state, block, counter, blen, flags);
 
             let mut chaining_value = [ self.chunk_state[0], self.chunk_state[1] ];
 
-            self.buf            = Self::BLOCK_ZERO;
-            self.offset         = 0;
+            // NOTE: 重置 Chunk State.
             self.chunk_len      = 0;
             self.chunk_state    = self.initial_state.clone();
             self.chunk_counter += 1; // WARN: 是否使用 wrapping_add 来避免当 输入的数据超出设计范围时的 Panic ?
-            
+
             // Chainning Value Stack
-            let mut total_chunks = self.chunk_counter;
-                
+            let mut total_chunks   = self.chunk_counter;
+
             while total_chunks & 1 == 0 {
                 self.stack_len -= 1;
-                let left_child = self.stack[self.stack_len];
+                let [va, vb] = self.stack[self.stack_len];
                 
-                let words     = [ left_child[0], left_child[1], chaining_value[0], chaining_value[1] ];
-                let block     = core::mem::transmute(words);  // NOTE: 此处的转换不会有安全问题。
+                let mut state = self.initial_state.clone();
+                let words     = [ va, vb, chaining_value[0], chaining_value[1] ];
                 let counter   = 0u64;                         // Counter always 0 for parent nodes.
                 let blen      = Self::BLOCK_LEN as u32;       // Always BLOCK_LEN (64) for parent nodes.
                 let flags     = self.initial_flags | PARENT;
 
-                let mut state = self.initial_state.clone();   // ParentNode 使用初始 state.
-                chaining_value_transform(&mut state, &block, counter, flags, blen);
+                transform_words(&mut state, &words, counter, blen, flags);
+
                 chaining_value[0] = state[0];
                 chaining_value[1] = state[1];
 
@@ -194,17 +179,14 @@ impl Blake3 {
             self.stack[self.stack_len] = chaining_value;
             self.stack_len += 1;
         } else {
-            let block     = &self.buf;
-            let counter   = self.chunk_counter;
-            let blen      = Self::BLOCK_LEN as u32;
-            let flags     = if self.chunk_len == 0 { self.initial_flags | CHUNK_START } else { self.initial_flags };
+            let state   = &mut self.chunk_state;
+            let counter = self.chunk_counter;
+            let blen    = Self::BLOCK_LEN as u32;
+            let flags   = if self.chunk_len == 0 { self.initial_flags | CHUNK_START | CHUNK_END } else { self.initial_flags | CHUNK_END };
 
-            chaining_value_transform(&mut self.chunk_state, &block, counter, flags, blen);
+            transform_block(state, block, counter, blen, flags);
 
-            self.buf        = Self::BLOCK_ZERO;
-            self.offset     = 0;
             self.chunk_len += Self::BLOCK_LEN;
-            self.chunk_state[2] = self.initial_state[2]; // NOTE: 复位 IV 前半部分（也就是 VA）。
         }
     }
 
@@ -214,7 +196,13 @@ impl Blake3 {
         while i < data.len() {
             if self.offset == Self::BLOCK_LEN   {
                 // The block buffer is full, compress input bytes into the current chunk state.
-                unsafe { self.process_block(); }
+                unsafe {
+                    let block = core::slice::from_raw_parts(self.buf.as_ptr(), Self::BLOCK_LEN);
+                    self.process_block(block);
+                    // NOTE: 清空缓冲区
+                    self.buf    = Self::BLOCK_ZERO;
+                    self.offset = 0;
+                }
             }
 
             // Copy input bytes into the block buffer.
@@ -231,184 +219,233 @@ impl Blake3 {
             // }
         }
     }
-
-    // #[inline]
+    
+    #[inline]
     pub fn finalize(self, digest: &mut [u8]) {
         unsafe {
-            let mut block     = self.buf;
-            let mut counter   = self.chunk_counter;
-            let mut blen      = self.offset as u32;
-            let mut flags     = if self.chunk_len == 0 { self.initial_flags | CHUNK_START | CHUNK_END } else { self.initial_flags | CHUNK_END };
-            let mut state     = self.chunk_state;
+            let m0 = _mm_loadu_si128(self.buf.as_ptr().add( 0) as *const __m128i);
+            let m1 = _mm_loadu_si128(self.buf.as_ptr().add(16) as *const __m128i);
+            let m2 = _mm_loadu_si128(self.buf.as_ptr().add(32) as *const __m128i);
+            let m3 = _mm_loadu_si128(self.buf.as_ptr().add(48) as *const __m128i);
+
+            let mut state   = self.chunk_state.clone();
+            let mut words   = [m0, m1, m2, m3];
+            let mut counter = self.chunk_counter;
+            let mut blen    = self.offset as u32;
+            let mut flags   = if self.chunk_len == 0 { self.initial_flags | CHUNK_START | CHUNK_END } else { self.initial_flags | CHUNK_END };
 
             let mut index = self.stack_len;
 
             while index > 0 {
                 index -= 1;
 
-                let left_child  = self.stack[index];
+                transform_words(&mut state, &words, counter, blen, flags);
 
-                chaining_value_transform(&mut state, &block, counter, flags, blen);
+                let [ va ,vb ] = self.stack[index];
+                let vc = state[0];
+                let vd = state[1];
 
-                let words = [ left_child[0], left_child[1], state[0], state[1] ];
-
-                block     = core::mem::transmute(words);  // NOTE: 此处的转换不会有安全问题。
+                // NOTE: 重置状态
+                state     = self.initial_state.clone();
+                words     = [ va, vb, vc, vd ];
                 counter   = 0u64;                         // Counter always 0 for parent nodes.
                 blen      = Self::BLOCK_LEN as u32;       // Always BLOCK_LEN (64) for parent nodes.
                 flags     = self.initial_flags | PARENT;
-                state     = self.initial_state.clone();
             }
             
             // ROOT
-            counter = 0u64;
-            flags   = flags | ROOT;
+            flags = flags | ROOT;
 
-            if digest.len() == 32 {
-                // BLAKE3-256
-                chaining_value_transform(&mut state, &block, counter, flags, blen);
-                
-                _mm_storeu_si128(digest.as_mut_ptr().add( 0) as *mut __m128i, state[0]);
-                _mm_storeu_si128(digest.as_mut_ptr().add(16) as *mut __m128i, state[1]);
-            } else if digest.len() == 64 {
-                // BLAKE3-512
-                root_transform(&mut state, &block, counter, flags, blen);
+            let [ va ,vb, vc ] = state;
+            Self::root(va, vb, vc, &words, blen, flags, digest);
+        }
+    }
+    
+    #[inline]
+    unsafe fn root(va: __m128i, vb: __m128i, vc: __m128i, words: &[__m128i; 4], blen: u32, flags: u32,  digest: &mut [u8]) {
+        let olen = digest.len();
 
-                _mm_storeu_si128(digest.as_mut_ptr().add( 0) as *mut __m128i, state[0]);
-                _mm_storeu_si128(digest.as_mut_ptr().add(16) as *mut __m128i, state[1]);
-                _mm_storeu_si128(digest.as_mut_ptr().add(32) as *mut __m128i, state[2]);
-                _mm_storeu_si128(digest.as_mut_ptr().add(48) as *mut __m128i, state[3]);
-            } else {
-                for out_block in digest.chunks_mut(Self::BLOCK_LEN) {
-                    let mut hash = state.clone();
-                    root_transform(&mut hash, &block, counter, flags, blen);
+        if olen == 32 {
+            // BLAKE3-256
+            let counter = 0u64;
+            let mut state = [ va, vb, vc ];
 
-                    let mut keystream = [0u8; 64];
-                    _mm_storeu_si128(keystream.as_mut_ptr().add( 0) as *mut __m128i, hash[0]);
-                    _mm_storeu_si128(keystream.as_mut_ptr().add(16) as *mut __m128i, hash[1]);
-                    _mm_storeu_si128(keystream.as_mut_ptr().add(32) as *mut __m128i, hash[2]);
-                    _mm_storeu_si128(keystream.as_mut_ptr().add(48) as *mut __m128i, hash[3]);
-                    
-                    let olen = out_block.len();
-                    out_block.copy_from_slice(&keystream[..olen]);
-                    
-                    // WARN: 是否使用 wrapping_add 来避免当 输入的数据超出设计范围时的 Panic ?
-                    counter += 1;
-                }
+            transform_words(&mut state, &words, counter, blen, flags);
+
+            _mm_storeu_si128(digest.as_mut_ptr().add( 0) as *mut __m128i, state[0]);
+            _mm_storeu_si128(digest.as_mut_ptr().add(16) as *mut __m128i, state[1]);
+        } else if olen == 64 {
+            // BLAKE3-512
+            let counter = 0u64;
+            let mut state = [ va, vb, vc, _mm_setzero_si128() ];
+
+            transform_root_node(&mut state, &words, counter, blen, flags);
+
+            _mm_storeu_si128(digest.as_mut_ptr().add( 0) as *mut __m128i, state[0]);
+            _mm_storeu_si128(digest.as_mut_ptr().add(16) as *mut __m128i, state[1]);
+            _mm_storeu_si128(digest.as_mut_ptr().add(32) as *mut __m128i, state[2]);
+            _mm_storeu_si128(digest.as_mut_ptr().add(48) as *mut __m128i, state[3]);
+        } else {
+            // Any
+            let state = [ va, vb, vc, _mm_setzero_si128() ];
+            let mut counter = 0u64;
+
+            let mut out_blocks = digest.chunks_exact_mut(Self::BLOCK_LEN);
+
+            for out_block in &mut out_blocks {
+                let mut hash = state.clone();
+
+                transform_root_node(&mut hash, &words, counter, blen, flags);
+
+                _mm_storeu_si128(out_block.as_mut_ptr().add( 0) as *mut __m128i, hash[0]);
+                _mm_storeu_si128(out_block.as_mut_ptr().add(16) as *mut __m128i, hash[1]);
+                _mm_storeu_si128(out_block.as_mut_ptr().add(32) as *mut __m128i, hash[2]);
+                _mm_storeu_si128(out_block.as_mut_ptr().add(48) as *mut __m128i, hash[3]);
+                // WARN: 在 64 位硬件平台上，counter 永远不会出现溢出的情况。
+                //       在 32 位硬件平台上，当要输出的 Digest 长度足够大时，counter 会溢出。
+                counter += 1;
+            }
+
+            // Last digest
+            let rem  = out_blocks.into_remainder();
+            let rlen = rem.len();
+            if rlen > 0 {
+                let mut hash = state.clone();
+
+                transform_root_node(&mut hash, &words, counter, blen, flags);
+
+                let mut buf = Self::BLOCK_ZERO;
+                _mm_storeu_si128(buf.as_mut_ptr().add( 0) as *mut __m128i, hash[0]);
+                _mm_storeu_si128(buf.as_mut_ptr().add(16) as *mut __m128i, hash[1]);
+                _mm_storeu_si128(buf.as_mut_ptr().add(32) as *mut __m128i, hash[2]);
+                _mm_storeu_si128(buf.as_mut_ptr().add(48) as *mut __m128i, hash[3]);
+                rem.copy_from_slice(&buf[..rlen]);
             }
         }
     }
 
-    pub(crate) fn oneshot_hash_inner<T: AsRef<[u8]>>(data: T, digest: &mut [u8]) {
+    pub fn oneshot_hash<T: AsRef<[u8]>>(data: T, digest: &mut [u8]) {
+        unsafe {
+            let va = _mm_loadu_si128(IV.as_ptr().add(0) as *const __m128i);
+            let vb = _mm_loadu_si128(IV.as_ptr().add(4) as *const __m128i);
+            let vc = va;
+
+            let initial_state = [ va, vb, vc ];
+            let initial_flags = 0u32;
+
+            Self::oneshot_inner(initial_state, initial_flags, data, digest);
+        }
+    }
+
+    pub fn oneshot_keyed_hash<K: AsRef<[u8]>, T: AsRef<[u8]>>(key: K, data: T, digest: &mut [u8]) {
+        let key = key.as_ref();
+
+        debug_assert_eq!(key.len(), Self::KEY_LEN);
+
+        unsafe {
+            let va = _mm_loadu_si128(key.as_ptr().add( 0) as *const __m128i);
+            let vb = _mm_loadu_si128(key.as_ptr().add(16) as *const __m128i);
+            let vc = _mm_loadu_si128( IV.as_ptr().add( 0) as *const __m128i);
+
+            let initial_state = [ va, vb, vc ];
+            let initial_flags = KEYED_HASH;
+
+            Self::oneshot_inner(initial_state, initial_flags, data, digest);
+        }
+    }
+
+    pub fn oneshot_derive_key<S: AsRef<[u8]>, T: AsRef<[u8]>>(context: S, data: T, digest: &mut [u8]) {
+        unsafe {
+            let va = _mm_loadu_si128(IV.as_ptr().add(0) as *const __m128i);
+            let vb = _mm_loadu_si128(IV.as_ptr().add(4) as *const __m128i);
+            let vc = va;
+
+            let initial_state = [ va, vb, vc ];
+            let initial_flags = DERIVE_KEY_CONTEXT;
+
+            let mut context_key = [0u8; Self::KEY_LEN];
+            Self::oneshot_inner(initial_state, initial_flags, context, &mut context_key);
+
+
+            let va = _mm_loadu_si128(context_key.as_ptr().add( 0) as *const __m128i);
+            let vb = _mm_loadu_si128(context_key.as_ptr().add(16) as *const __m128i);
+
+            let initial_state = [ va, vb, vc ];
+            let initial_flags = DERIVE_KEY_MATERIAL;
+
+            Self::oneshot_inner(initial_state, initial_flags, data, digest);
+        }
+    }
+
+    #[inline]
+    unsafe fn oneshot_inner<T: AsRef<[u8]>>(initial_state: [__m128i; 3], initial_flags: u32, data: T, digest: &mut [u8]) {
         let data = data.as_ref();
         let ilen = data.len();
-        
-        unsafe {
-            if ilen <= Self::CHUNK_LEN {
-                // NOTE: 当输入数据 <= CHUNK_LEN 时，避免 CV-STACK 的开销。
-                let n = ilen / Self::BLOCK_LEN;
-                let r = ilen % Self::BLOCK_LEN;
 
-                let chunks: &[u8];
-                let remainder: &[u8];
-                
-                if r > 0 {
-                    chunks = data;
-                    remainder = &data[ilen - r..];
-                } else {
-                    if n > 0 {
-                        // NOTE: last_block 是一个完整的 block.
-                        debug_assert!(ilen >= Self::BLOCK_LEN);
-                        let clen = ilen - Self::BLOCK_LEN;
-                        chunks = &data[..clen];
-                        remainder = &data[clen..];
-                    } else {
-                        // Empty input ( Last Block is all zero.)
-                        chunks = data;
-                        remainder = data;
-                    }
-                };
+        if ilen <= Self::CHUNK_LEN {
+            // NOTE: 快速计算小数据。
+            let va = _mm_loadu_si128(IV.as_ptr().add(0) as *const __m128i);
+            let vb = _mm_loadu_si128(IV.as_ptr().add(4) as *const __m128i);
+            let vc = va;
 
-                let a = _mm_loadu_si128(IV.as_ptr().add(0) as *const __m128i);
-                let b = _mm_loadu_si128(IV.as_ptr().add(4) as *const __m128i);
-                let c = a;
-                let d = _mm_setzero_si128();
+            let initial_flags = 0u32;
+            let mut state = [ va, vb, vc ];
+            let mut chunk_len = 0usize;
 
-                let initial_flags = 0u32;
+            let mut rlen = ilen;
+            let mut ptr = data.as_ptr();
+            while rlen > Self::BLOCK_LEN {
+                let block = core::slice::from_raw_parts(ptr, Self::BLOCK_LEN);
+                let counter   = 0;
+                let blen      = Self::BLOCK_LEN as u32;
+                let flags     = if chunk_len == 0 { initial_flags | CHUNK_START } else { initial_flags };
 
-                let mut state = [a, b, c, d];
-                let mut chunk_len = 0usize;
-                let mut buf = [0u8; 64];
+                transform_block(&mut state, block, counter, blen, flags);
 
-                for chunk in chunks.chunks_exact(Self::BLOCK_LEN) {
-                    buf.copy_from_slice(chunk);
-
-                    let block     = core::mem::transmute(buf);
-                    let counter   = 0;
-                    let blen      = Self::BLOCK_LEN as u32;
-                    let flags     = if chunk_len == 0 { initial_flags | CHUNK_START } else { initial_flags };
-
-                    chaining_value_transform(&mut state, &block, counter, flags, blen);
-
-                    chunk_len += Self::BLOCK_LEN;
-                    state[2]   = c; // NOTE: 复位 IV 前半部分（也就是 VA）。
-                }
-
-
-                let rlen = remainder.len();
-                let mut last_block = [0u8; 64];
-
-                if remainder.len() > 0 {
-                    last_block[..rlen].copy_from_slice(remainder);
-                }
-
-                let block     = &last_block;
-                let blen      = rlen as u32;
-                let flags     = if chunk_len == 0 { initial_flags | CHUNK_START | CHUNK_END  } else { initial_flags | CHUNK_END };
-
-                // ROOT
-                let counter = 0u64;
-                let flags = flags | ROOT;
-
-                if digest.len() == 32 {
-                    // BLAKE3-256
-                    chaining_value_transform(&mut state, &block, counter, flags, blen);
-                    
-                    _mm_storeu_si128(digest.as_mut_ptr().add( 0) as *mut __m128i, state[0]);
-                    _mm_storeu_si128(digest.as_mut_ptr().add(16) as *mut __m128i, state[1]);
-                } else if digest.len() == 64 {
-                    // BLAKE3-512
-                    root_transform(&mut state, &block, counter, flags, blen);
-
-                    _mm_storeu_si128(digest.as_mut_ptr().add( 0) as *mut __m128i, state[0]);
-                    _mm_storeu_si128(digest.as_mut_ptr().add(16) as *mut __m128i, state[1]);
-                    _mm_storeu_si128(digest.as_mut_ptr().add(32) as *mut __m128i, state[2]);
-                    _mm_storeu_si128(digest.as_mut_ptr().add(48) as *mut __m128i, state[3]);
-                } else {
-                    let mut counter = 0u64;
-
-                    for out_block in digest.chunks_mut(Self::BLOCK_LEN) {
-                        let mut hash = state.clone();
-                        root_transform(&mut hash, &block, counter, flags, blen);
-
-                        let mut keystream = [0u8; 64];
-                        _mm_storeu_si128(keystream.as_mut_ptr().add( 0) as *mut __m128i, hash[0]);
-                        _mm_storeu_si128(keystream.as_mut_ptr().add(16) as *mut __m128i, hash[1]);
-                        _mm_storeu_si128(keystream.as_mut_ptr().add(32) as *mut __m128i, hash[2]);
-                        _mm_storeu_si128(keystream.as_mut_ptr().add(48) as *mut __m128i, hash[3]);
-                        
-                        let olen = out_block.len();
-                        out_block.copy_from_slice(&keystream[..olen]);
-                        
-                        // WARN: 是否使用 wrapping_add 来避免当 输入的数据超出设计范围时的 Panic ?
-                        counter += 1;
-                    }
-                }
-                return ();
+                ptr        = ptr.add(Self::BLOCK_LEN);
+                rlen      -= Self::BLOCK_LEN;
+                chunk_len += Self::BLOCK_LEN;
             }
 
+            let mut last_block = Self::BLOCK_ZERO;
+            if rlen > 0 {
+                let rem = core::slice::from_raw_parts(ptr, rlen);
+                last_block[..rlen].copy_from_slice(rem);
+            }
+
+            let m0 = _mm_loadu_si128(last_block.as_ptr().add( 0) as *const __m128i);
+            let m1 = _mm_loadu_si128(last_block.as_ptr().add(16) as *const __m128i);
+            let m2 = _mm_loadu_si128(last_block.as_ptr().add(32) as *const __m128i);
+            let m3 = _mm_loadu_si128(last_block.as_ptr().add(48) as *const __m128i);
+
+            // ROOT
+            let blen  = rlen as u32;
+            let flags = if chunk_len == 0 { initial_flags | CHUNK_START | CHUNK_END | ROOT  } else { initial_flags | CHUNK_END | ROOT };
+            let words = [m0, m1, m2, m3];
+
+            let [ va ,vb, vc ] = state;
+            
+            Self::root(va, vb, vc, &words, blen, flags, digest);
+        } else {
             // NOTE: 长度大于 1 个 Chunk 大小的数据会略慢。
-            let mut m = Self::new();
-            m.update(data);
+            let mut m = Self::new_(initial_state, initial_flags);
+
+            // NOTE: 手动 .update 避免数据复制。
+            let mut rlen = ilen;
+            let mut ptr = data.as_ptr();
+            while rlen > Self::BLOCK_LEN {
+                let block = core::slice::from_raw_parts(ptr, Self::BLOCK_LEN);
+                m.process_block(block);
+                ptr = ptr.add(Self::BLOCK_LEN);
+                rlen -= Self::BLOCK_LEN;
+            }
+
+            if rlen > 0 {
+                let rem = core::slice::from_raw_parts(ptr, rlen);
+                m.buf[..rlen].copy_from_slice(rem);
+                m.offset = rlen;
+            }
+
             m.finalize(digest);
         }
     }

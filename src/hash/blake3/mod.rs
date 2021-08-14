@@ -24,49 +24,41 @@ pub use self::platform::*;
 
 /// The blake3 default hash function with any digest length
 pub fn blake3<T: AsRef<[u8]>>(data: T, digest: &mut [u8]) {
-    Blake3::oneshot_hash_inner(data, digest);
+    Blake3::oneshot_hash(data, digest);
 }
 
 /// The blake3 default hash function with 256 digest length
 pub fn blake3_256<T: AsRef<[u8]>>(data: T) -> [u8; 32] {
     let mut digest = [0u8; 32];
-    Blake3::oneshot_hash_inner(data, &mut digest[..]);
+    Blake3::oneshot_hash(data, &mut digest[..]);
     digest
 }
 
 /// The blake3 default hash function with 512 digest length
 pub fn blake3_512<T: AsRef<[u8]>>(data: T) -> [u8; 64] {
     let mut digest = [0u8; 64];
-    Blake3::oneshot_hash_inner(data, &mut digest[..]);
+    Blake3::oneshot_hash(data, &mut digest[..]);
     digest
 }
 
 
 /// The blake3 keyed hash function with any digest length
 pub fn blake3_keyed_hash<T: AsRef<[u8]>>(key: &[u8; Blake3::KEY_LEN], data: T, digest: &mut [u8]) {
-    let mut hasher = Blake3::with_keyed(key);
-    hasher.update(data.as_ref());
-    hasher.finalize(digest);
+    Blake3::oneshot_keyed_hash(key, data, digest);
 }
 
 /// The blake3 keyed hash function with 256 digest length
 pub fn blake3_keyed_hash_256<T: AsRef<[u8]>>(key: &[u8; Blake3::KEY_LEN], data: T) -> [u8; 32] {
-    let mut hasher = Blake3::with_keyed(key);
-    hasher.update(data.as_ref());
-
     let mut digest = [0u8; 32];
-    hasher.finalize(&mut digest);
-
+    Blake3::oneshot_keyed_hash(key, data, &mut digest);
+    
     return digest;
 }
 
 /// The blake3 keyed hash function with 512 digest length
 pub fn blake3_keyed_hash_512<T: AsRef<[u8]>>(key: &[u8; Blake3::KEY_LEN], data: T) -> [u8; 64] {
-    let mut hasher = Blake3::with_keyed(key);
-    hasher.update(data.as_ref());
-
     let mut digest = [0u8; 64];
-    hasher.finalize(&mut digest);
+    Blake3::oneshot_keyed_hash(key, data, &mut digest);
 
     return digest;
 }
@@ -74,30 +66,22 @@ pub fn blake3_keyed_hash_512<T: AsRef<[u8]>>(key: &[u8; Blake3::KEY_LEN], data: 
 
 /// The blake3 key derivation function with any digest length
 pub fn blake3_derive_key<S: AsRef<[u8]>, T: AsRef<[u8]>>(context: S, data: T, digest: &mut [u8]) {
-    let mut hasher = Blake3::new_derive_key(context);
-    hasher.update(data.as_ref());
-    hasher.finalize(digest);
+    Blake3::oneshot_derive_key(context, data, digest)
 }
 
 /// The blake3 key derivation function with 256 digest length
 pub fn blake3_derive_key_256<S: AsRef<[u8]>, T: AsRef<[u8]>>(context: S, data: T) -> [u8; 32] {
-    let mut hasher = Blake3::new_derive_key(context);
-    hasher.update(data.as_ref());
-
     let mut digest = [0u8; 32];
-    hasher.finalize(&mut digest);
+    Blake3::oneshot_derive_key(context, data, &mut digest);
 
     return digest;
 }
 
 /// The blake3 key derivation function with 512 digest length
 pub fn blake3_derive_key_512<S: AsRef<[u8]>, T: AsRef<[u8]>>(context: S, data: T) -> [u8; 64] {
-    let mut hasher = Blake3::new_derive_key(context);
-    hasher.update(data.as_ref());
-
     let mut digest = [0u8; 64];
-    hasher.finalize(&mut digest);
-
+    Blake3::oneshot_derive_key(context, data, &mut digest);
+    
     return digest;
 }
 

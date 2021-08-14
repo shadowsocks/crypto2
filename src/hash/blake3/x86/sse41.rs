@@ -47,67 +47,60 @@ macro_rules! ROUND {
 }
 
 
-#[cfg(target_feature = "sse2")]
-// #[inline]
-pub unsafe fn root_transform(state: &mut [__m128i; 4], block: &[u8; 64], counter: u64, flags: u32, blen: u32) {
-    let t0 = counter as u32 as i32;
-    let t1 = (counter >> 32) as u32 as i32;
-    let f0 = blen as i32;  // BLOCK-LEN
-    let f1 = flags as i32;
-
-    state[3] = _mm_setr_epi32(t0, t1, f0, f1);
-
+#[cfg(all(target_feature = "sse2", target_feature = "sse4.1"))]
+#[inline]
+pub unsafe fn transform_block(state: &mut [__m128i; 3], block: &[u8], counter: u64, blen: u32, flags: u32) {
     let m0 = _mm_loadu_si128(block.as_ptr().add( 0) as *const __m128i);
     let m1 = _mm_loadu_si128(block.as_ptr().add(16) as *const __m128i);
     let m2 = _mm_loadu_si128(block.as_ptr().add(32) as *const __m128i);
     let m3 = _mm_loadu_si128(block.as_ptr().add(48) as *const __m128i);
 
-    let va_copy = state[0];
-    let vb_copy = state[1];
-
-    transform_inner(state, [m0, m1, m2, m3]);
-
-    // XOR
-    state[0] = _mm_xor_si128(state[0], state[2]);
-    state[1] = _mm_xor_si128(state[1], state[3]);
-    state[2] = _mm_xor_si128(state[2], va_copy);
-    state[3] = _mm_xor_si128(state[3], vb_copy);
-}
-
-#[cfg(target_feature = "sse2")]
-// #[inline]
-pub unsafe fn chaining_value_transform(state: &mut [__m128i; 4], block: &[u8; 64], counter: u64, flags: u32, blen: u32) {
-    let t0 = counter as u32 as i32;
-    let t1 = (counter >> 32) as u32 as i32;
-    let f0 = blen as i32;  // BLOCK-LEN
-    let f1 = flags as i32;
-
-    state[3] = _mm_setr_epi32(t0, t1, f0, f1);
-
-    let m0 = _mm_loadu_si128(block.as_ptr().add( 0) as *const __m128i);
-    let m1 = _mm_loadu_si128(block.as_ptr().add(16) as *const __m128i);
-    let m2 = _mm_loadu_si128(block.as_ptr().add(32) as *const __m128i);
-    let m3 = _mm_loadu_si128(block.as_ptr().add(48) as *const __m128i);
-
-    transform_inner(state, [m0, m1, m2, m3]);
-
-    // XOR （ NOTE: 后续的两个 XOR 被省略 ）
-    state[0] = _mm_xor_si128(state[0], state[2]);
-    state[1] = _mm_xor_si128(state[1], state[3]);
+    transform_words(state, &[m0, m1, m2, m3], counter, blen, flags)
 }
 
 #[cfg(all(target_feature = "sse2", target_feature = "sse4.1"))]
 #[inline]
-unsafe fn transform_inner(state: &mut [__m128i; 4], block: [__m128i; 4]) {
+pub unsafe fn transform_words(state: &mut [__m128i; 3], words: &[__m128i; 4], counter: u64, blen: u32, flags: u32) {
+    let t0 = counter as u32 as i32;
+    let t1 = (counter >> 32) as u32 as i32;
+    let f0 = blen as i32;  // BLOCK-LEN
+    let f1 = flags as i32;
+
+    let vd = _mm_setr_epi32(t0, t1, f0, f1);
+
+    let [va, vb, vc] = state;
+    let mut temp = [*va, *vb, *vc, vd];
+    transform::<false>(&mut temp, words);
+
+    state[0] = temp[0];
+    state[1] = temp[1];
+}
+
+#[cfg(all(target_feature = "sse2", target_feature = "sse4.1"))]
+#[inline]
+pub unsafe fn transform_root_node(state: &mut [__m128i; 4], words: &[__m128i; 4], counter: u64, blen: u32, flags: u32) {
+    let t0 = counter as u32 as i32;
+    let t1 = (counter >> 32) as u32 as i32;
+    let f0 = blen as i32;  // BLOCK-LEN
+    let f1 = flags as i32;
+
+    state[3] = _mm_setr_epi32(t0, t1, f0, f1);
+
+    transform::<true>(state, words);
+}
+
+#[cfg(all(target_feature = "sse2", target_feature = "sse4.1"))]
+#[inline]
+unsafe fn transform<const IS_ROOT: bool>(state: &mut [__m128i; 4], words: &[__m128i; 4]) {
     let mut va = state[0];
     let mut vb = state[1];
     let mut vc = state[2];
     let mut vd = state[3];
 
-    let mut m0 = block[0];
-    let mut m1 = block[1];
-    let mut m2 = block[2];
-    let mut m3 = block[3];
+    let mut m0 = words[0];
+    let mut m1 = words[1];
+    let mut m2 = words[2];
+    let mut m3 = words[3];
 
     let mut mx1;
     let mut mx2;
@@ -131,8 +124,8 @@ unsafe fn transform_inner(state: &mut [__m128i; 4], block: [__m128i; 4]) {
     }
     
     // Roud 1
-    mx1 = shuffle2!(m0, m1, MASK_2020);      //  6  4  2  0
-    my1 = shuffle2!(m0, m1, MASK_3131);      //  7  5  3  1
+    mx1 = shuffle2!(m0, m1, MASK_2020);                               //  6  4  2  0
+    my1 = shuffle2!(m0, m1, MASK_3131);                               //  7  5  3  1
     mx2 = _mm_shuffle_epi32(shuffle2!(m2, m3, MASK_2020), MASK_2103); // 12 10  8 14
     my2 = _mm_shuffle_epi32(shuffle2!(m2, m3, MASK_3131), MASK_2103); // 13 11  9 15
     ROUND!(va, vb, vc, vd, mx1, mx2, my1, my2);
@@ -185,8 +178,22 @@ unsafe fn transform_inner(state: &mut [__m128i; 4], block: [__m128i; 4]) {
     my2 = _mm_shuffle_epi32(_mm_unpacklo_epi32(m2, _mm_unpackhi_epi32(m1, m3)), MASK_0132);
     ROUND!(va, vb, vc, vd, mx1, mx2, my1, my2);
 
-    state[0] = va;
-    state[1] = vb;
-    state[2] = vc;
-    state[3] = vd;
+    // XOR
+    va = _mm_xor_si128(va, vc);
+    vb = _mm_xor_si128(vb, vd);
+    
+    if IS_ROOT {
+        let va_copy = state[0];
+        let vb_copy = state[1];
+        vc = _mm_xor_si128(vc, va_copy);
+        vd = _mm_xor_si128(vd, vb_copy);
+        
+        state[0] = va;
+        state[1] = vb;
+        state[2] = vc;
+        state[3] = vd;
+    } else {
+        state[0] = va;
+        state[1] = vb;
+    }
 }
