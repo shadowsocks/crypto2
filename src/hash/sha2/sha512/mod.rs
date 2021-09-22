@@ -54,7 +54,7 @@ const SHA384_INITIAL_STATE: [u64; 8] = [
 #[cfg(target_arch = "aarch64")]
 #[inline]
 fn transform(state: &mut [u64; 8], block: &[u8]) {
-    // NOTE: 等待 Rust 的 `std_detect` 库支持 AArch64 v8.4-A。
+    // Waiting `std_detect` to support AArch64 v8.4-A
     // https://github.com/rust-lang/stdarch/blob/master/crates/std_detect/src/detect/arch/aarch64.rs#L13
     
     generic::transform(state, block)
