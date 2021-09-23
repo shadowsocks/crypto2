@@ -5,10 +5,7 @@ cfg_if! {
                  all(target_feature = "aes", target_feature = "sse2")))] {
         mod x86;
         pub use self::x86::*;
-    } else if #[cfg(all(target_arch = "aarch64", target_feature = "crypto"))] {
-        // NOTE:
-        //      Crypto: AES + PMULL + SHA1 + SHA2
-        //      https://github.com/rust-lang/stdarch/blob/master/crates/std_detect/src/detect/arch/aarch64.rs#L26
+    } else if #[cfg(all(target_arch = "aarch64", target_feature = "aes"))] {
         mod aarch64;
         pub use self::aarch64::*;
     } else if #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))] {

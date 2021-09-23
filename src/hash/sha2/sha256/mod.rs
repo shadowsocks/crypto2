@@ -41,15 +41,15 @@ pub fn sha256<T: AsRef<[u8]>>(data: T) -> [u8; Sha256::DIGEST_LEN] {
 }
 
 
-// NOTE: 直接使用 SHA-NI 来加速。
+// Optimize with SHA-NI
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sha"))]
 #[inline]
 fn transform(state: &mut [u32; 8], block: &[u8]) {
     x86::transform(state, block)
 }
 
-// NOTE: 当编译时，没有开启 `+sha` 指令时，通过 Runtime 来判断
-//       这样，会有性能损失。后面需要考虑是否有更好的方式。
+// If compile without `+sha` then we will check for `sha` feature in runtime.
+// FIXME: It will have performance lost. We should find a better way.
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(target_feature = "sha")))]
 #[inline]
 fn transform(state: &mut [u32; 8], block: &[u8]) {
@@ -61,12 +61,12 @@ fn transform(state: &mut [u32; 8], block: &[u8]) {
 }
 
 
-#[cfg(all(target_arch = "aarch64", target_feature = "crypto"))]
+#[cfg(all(target_arch = "aarch64", target_feature = "sha2"))]
 #[inline]
 fn transform(state: &mut [u32; 8], block: &[u8]) {
     aarch64::transform(state, block)
 }
-#[cfg(all(target_arch = "aarch64", not(target_feature = "crypto")))]
+#[cfg(all(target_arch = "aarch64", not(target_feature = "sha2")))]
 #[inline]
 fn transform(state: &mut [u32; 8], block: &[u8]) {
     generic::transform(state, block)

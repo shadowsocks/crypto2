@@ -5,7 +5,7 @@ cfg_if! {
                  all(target_feature = "sse2", target_feature = "pclmulqdq")))] {
         mod x86;
         pub use self::x86::Polyval;
-    } else if #[cfg(all(target_arch = "aarch64", target_feature = "crypto"))] {
+    } else if #[cfg(all(target_arch = "aarch64", target_feature = "pmull"))] {
         mod aarch64;
         pub use self::aarch64::Polyval;
     } else if #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))] {
