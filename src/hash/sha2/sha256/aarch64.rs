@@ -4,9 +4,13 @@ use super::Sha256;
 
 use core::arch::aarch64::*;
 
-
-#[inline]
+#[inline(always)]
 pub fn transform(state: &mut [u32; 8], block: &[u8]) {
+    unsafe { transform_simd(state, block) }
+}
+
+#[target_feature(enable = "sha2")]
+unsafe fn transform_simd(state: &mut [u32; 8], block: &[u8]) {
     // Process a block with the SHA-256 algorithm.
     // https://github.com/noloader/SHA-Intrinsics/blob/master/sha256-arm.c
     debug_assert_eq!(state.len(), 8);
