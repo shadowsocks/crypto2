@@ -9,28 +9,29 @@ use cfg_if::cfg_if;
 
 cfg_if! {
     if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        fn and_si128_inplace_sse2(a: &mut [u8], b: &[u8]) {
-            unsafe {
-                let mut c = _mm_loadu_si128(a.as_ptr() as *const __m128i);
-                let d = _mm_loadu_si128(b.as_ptr() as *const __m128i);
-                c = _mm_and_si128(c, d);
-                _mm_storeu_si128(a.as_mut_ptr() as *mut __m128i, c);
-            }
+        #[target_feature(enable = "sse2")]
+        unsafe fn and_si128_inplace_sse2(a: &mut [u8], b: &[u8]) {
+            let mut c = _mm_loadu_si128(a.as_ptr() as *const __m128i);
+            let d = _mm_loadu_si128(b.as_ptr() as *const __m128i);
+            c = _mm_and_si128(c, d);
+            _mm_storeu_si128(a.as_mut_ptr() as *mut __m128i, c);
         }
 
-        #[cfg(target_feature = "sse2")]
-        #[inline]
-        pub fn and_si128_inplace(a: &mut [u8], b: &[u8]) {
-            and_si128_inplace_sse2(a, b)
-        }
-
-        #[cfg(not(target_feature = "sse2"))]
-        #[inline]
-        pub fn and_si128_inplace(a: &mut [u8], b: &[u8]) {
-            if std::is_x86_feature_detected!("sse2") {
-                and_si128_inplace_sse2(a, b)
+        cfg_if! {
+            if #[cfg(target_feature = "sse2")] {
+                #[inline(always)]
+                pub fn and_si128_inplace(a: &mut [u8], b: &[u8]) {
+                    unsafe { and_si128_inplace_sse2(a, b) }
+                }
             } else {
-                and_si128_inplace_generic(a, b)
+                #[inline(always)]
+                pub fn and_si128_inplace(a: &mut [u8], b: &[u8]) {
+                    if std::is_x86_feature_detected!("sse2") {
+                        unsafe { and_si128_inplace_sse2(a, b) }
+                    } else {
+                        and_si128_inplace_generic(a, b)
+                    }
+                }
             }
         }
     } else if #[cfg(target_arch = "aarch64")] {

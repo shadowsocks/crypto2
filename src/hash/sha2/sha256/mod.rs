@@ -3,14 +3,63 @@
 // The SHA-256 Secure Hash Standard was published by NIST in 2002.
 // <http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf>
 use core::convert::TryFrom;
+use cfg_if::cfg_if;
 
+cfg_if! {
+    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+        mod x86;
 
-#[allow(dead_code)]
-mod generic;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-mod x86;
-#[cfg(target_arch = "aarch64")]
-mod aarch64;
+        cfg_if! {
+            if #[cfg(target_feature = "sha")] {
+                // Optimize with SHA-NI
+                #[inline]
+                fn transform(state: &mut [u32; 8], block: &[u8]) {
+                    x86::transform(state, block)
+                }
+            } else {
+                mod generic;
+
+                // If compile without `+sha` then we will check for `sha` feature in runtime.
+                // FIXME: It will have performance lost. We should find a better way.
+                #[inline]
+                fn transform(state: &mut [u32; 8], block: &[u8]) {
+                    if std::is_x86_feature_detected!("sha") {
+                        x86::transform(state, block)
+                    } else {
+                        generic::transform(state, block)
+                    }
+                }
+            }
+        }
+    } else if #[cfg(target_arch = "aarch64")] {
+        mod aarch64;
+
+        cfg_if! {
+            if #[cfg(target_feature = "sha2")] {
+                fn transform(state: &mut [u32; 8], block: &[u8]) {
+                    aarch64::transform(state, block)
+                }
+            } else {
+                mod generic;
+
+                fn transform(state: &mut [u32; 8], block: &[u8]) {
+                    if std::is_aarch64_feature_detected("sha2") {
+                        aarch64::transform(state, block)
+                    } else {
+                        generic::transform(state, block)
+                    }
+                }
+            }
+        }
+    } else {
+        mod generic;
+
+        #[inline]
+        fn transform(state: &mut [u32; 8], block: &[u8]) {
+            generic::transform(state, block)
+        }
+    }
+}
 
 // Round constants
 const K32: [u32; 64] = [
@@ -38,49 +87,6 @@ pub fn sha224<T: AsRef<[u8]>>(data: T) -> [u8; Sha224::DIGEST_LEN] {
 /// SHA2-256
 pub fn sha256<T: AsRef<[u8]>>(data: T) -> [u8; Sha256::DIGEST_LEN] {
     Sha256::oneshot(data)
-}
-
-
-// Optimize with SHA-NI
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), target_feature = "sha"))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    x86::transform(state, block)
-}
-
-// If compile without `+sha` then we will check for `sha` feature in runtime.
-// FIXME: It will have performance lost. We should find a better way.
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(target_feature = "sha")))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    if is_x86_feature_detected!("sha") {
-        x86::transform(state, block)
-    } else {
-        generic::transform(state, block)
-    }
-}
-
-
-#[cfg(all(target_arch = "aarch64", target_feature = "sha2"))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    aarch64::transform(state, block)
-}
-#[cfg(all(target_arch = "aarch64", not(target_feature = "sha2")))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    generic::transform(state, block)
-}
-
-
-// Other platform (e.g: MIPS)
-#[cfg(all(
-    not(any(target_arch = "x86", target_arch = "x86_64")),
-    not(target_arch = "aarch64"),
-))]
-#[inline]
-fn transform(state: &mut [u32; 8], block: &[u8]) {
-    generic::transform(state, block)
 }
 
 

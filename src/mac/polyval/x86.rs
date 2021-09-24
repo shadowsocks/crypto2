@@ -23,47 +23,54 @@ impl Polyval {
     pub const BLOCK_LEN: usize = 16;
     pub const TAG_LEN: usize   = 16;
 
-
+    #[inline(always)]
     pub fn new(k: &[u8]) -> Self {
+        unsafe { Self::new_simd(k) }
+    }
+
+    #[target_feature(enable = "sse2,pclmulqdq")]
+    unsafe fn new_simd(k: &[u8]) -> Self {
         assert_eq!(k.len(), Self::KEY_LEN);
         
-        unsafe {
-            let h = _mm_setzero_si128();
-            let key = _mm_loadu_si128(k.as_ptr() as *const __m128i);
+        let h = _mm_setzero_si128();
+        let key = _mm_loadu_si128(k.as_ptr() as *const __m128i);
 
-            Self { key, h  }
-        }
+        Self { key, h  }
     }
 
     #[inline]
-    fn gf_mul(&mut self, block: &[u8]) {
-        unsafe {
-            let a = _mm_loadu_si128(block.as_ptr() as *const __m128i);
-            let mask = _mm_setr_epi32(0x1, 0, 0, 0xc2000000u32 as _);
+    unsafe fn gf_mul(&mut self, block: &[u8]) {
+        let a = _mm_loadu_si128(block.as_ptr() as *const __m128i);
+        let mask = _mm_setr_epi32(0x1, 0, 0, 0xc2000000u32 as _);
 
-            self.h = _mm_xor_si128(self.h, a);
+        self.h = _mm_xor_si128(self.h, a);
 
-            let mut tmp1 = _mm_clmulepi64_si128(self.h, self.key, 0x00);
-            let mut tmp4 = _mm_clmulepi64_si128(self.h, self.key, 0x11);
-            let mut tmp2 = _mm_clmulepi64_si128(self.h, self.key, 0x10);
-            let mut tmp3 = _mm_clmulepi64_si128(self.h, self.key, 0x01);
+        let mut tmp1 = _mm_clmulepi64_si128(self.h, self.key, 0x00);
+        let mut tmp4 = _mm_clmulepi64_si128(self.h, self.key, 0x11);
+        let mut tmp2 = _mm_clmulepi64_si128(self.h, self.key, 0x10);
+        let mut tmp3 = _mm_clmulepi64_si128(self.h, self.key, 0x01);
 
-            tmp2 = _mm_xor_si128(tmp2, tmp3);
-            tmp3 = _mm_slli_si128(tmp2, 8);
-            tmp2 = _mm_srli_si128(tmp2, 8);
-            tmp1 = _mm_xor_si128(tmp3, tmp1);
-            tmp4 = _mm_xor_si128(tmp4, tmp2);
-            tmp2 = _mm_clmulepi64_si128(tmp1, mask, 0x10);
-            tmp3 = _mm_shuffle_epi32(tmp1, 78);
-            tmp1 = _mm_xor_si128(tmp3, tmp2);
-            tmp2 = _mm_clmulepi64_si128(tmp1, mask, 0x10);
-            tmp3 = _mm_shuffle_epi32(tmp1, 78);
-            tmp1 = _mm_xor_si128(tmp3, tmp2);
-            self.h = _mm_xor_si128(tmp4, tmp1);
-        }
+        tmp2 = _mm_xor_si128(tmp2, tmp3);
+        tmp3 = _mm_slli_si128(tmp2, 8);
+        tmp2 = _mm_srli_si128(tmp2, 8);
+        tmp1 = _mm_xor_si128(tmp3, tmp1);
+        tmp4 = _mm_xor_si128(tmp4, tmp2);
+        tmp2 = _mm_clmulepi64_si128(tmp1, mask, 0x10);
+        tmp3 = _mm_shuffle_epi32(tmp1, 78);
+        tmp1 = _mm_xor_si128(tmp3, tmp2);
+        tmp2 = _mm_clmulepi64_si128(tmp1, mask, 0x10);
+        tmp3 = _mm_shuffle_epi32(tmp1, 78);
+        tmp1 = _mm_xor_si128(tmp3, tmp2);
+        self.h = _mm_xor_si128(tmp4, tmp1);
     }
 
+    #[inline(always)]
     pub fn update(&mut self, m: &[u8]) {
+        unsafe { self.update_simd(m) }
+    }
+
+    #[target_feature(enable = "sse2,pclmulqdq")]
+    unsafe fn update_simd(&mut self, m: &[u8]) {
         let mlen = m.len();
 
         for chunk in m.chunks_exact(Self::BLOCK_LEN) {
@@ -79,11 +86,15 @@ impl Polyval {
         }
     }
 
+    #[inline(always)]
     pub fn finalize(self) -> [u8; Self::TAG_LEN] {
-        unsafe {
-            let mut tag = [0u8; Self::TAG_LEN];
-            _mm_storeu_si128(tag.as_mut_ptr() as *mut __m128i, self.h);
-            tag
-        }
+        unsafe { self.finalize_simd() }
+    }
+
+    #[target_feature(enable = "sse2,pclmulqdq")]
+    unsafe fn finalize_simd(self) -> [u8; Self::TAG_LEN] {
+        let mut tag = [0u8; Self::TAG_LEN];
+        _mm_storeu_si128(tag.as_mut_ptr() as *mut __m128i, self.h);
+        tag
     }
 }

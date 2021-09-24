@@ -8,7 +8,7 @@ use core::mem::transmute;
 // Convert _mm_clmulepi64_si128 to vmull_{high}_p64
 // https://stackoverflow.com/questions/38553881/convert-mm-clmulepi64-si128-to-vmull-high-p64
 
-#[inline]
+#[target_feature(enable = "pmull")]
 unsafe fn pmull(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
     // Low
     let a = vgetq_lane_u64(vreinterpretq_u64_u8(a), 0);
@@ -16,7 +16,7 @@ unsafe fn pmull(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
     transmute(vmull_p64(a, b))
 }
 
-#[inline]
+#[target_feature(enable = "pmull")]
 unsafe fn pmull2(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
     // High
     let a = vgetq_lane_u64(vreinterpretq_u64_u8(a), 1);
@@ -40,7 +40,7 @@ unsafe fn vrbitq_u8(a: uint8x16_t) -> uint8x16_t {
 
 
 // Perform the multiplication and reduction in GF(2^128)
-#[inline]
+#[target_feature(enable = "pmull")]
 unsafe fn gf_mul(key: uint8x16_t, m: &[u8], tag: &mut uint8x16_t) {
     let m = vrbitq_u8(*(m.as_ptr() as *const uint8x16_t));
 
