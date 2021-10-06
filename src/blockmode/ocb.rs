@@ -207,6 +207,7 @@ macro_rules! impl_block_cipher_with_ocb_mode {
                 self.encrypt_slice_detached(nonce, aad, plaintext_in_ciphertext_out, tag_out)
             }
 
+            #[must_use]
             pub fn decrypt_slice(&self, nonce: &[u8], aad: &[u8], aead_pkt: &mut [u8]) -> bool {
                 debug_assert!(aead_pkt.len() >= Self::TAG_LEN);
 
@@ -292,6 +293,7 @@ macro_rules! impl_block_cipher_with_ocb_mode {
                 tag_out.copy_from_slice(&tag_block[..Self::TAG_LEN]);
             }
 
+            #[must_use]
             pub fn decrypt_slice_detached(&self, nonce: &[u8], aad: &[u8], ciphertext_in_plaintext_out: &mut [u8], tag_in: &[u8]) -> bool {
                 let alen = aad.len();
                 let clen = ciphertext_in_plaintext_out.len();

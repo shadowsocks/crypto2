@@ -279,10 +279,12 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
                 self.encrypt_slice_opt_detached(components, plaintext_in_ciphertext_out, tag_out, opts)
             }
 
+            #[must_use]
             pub fn decrypt_slice(&self, components: &[&[u8]], aead_pkt: &mut [u8]) -> bool {
                 self.decrypt_slice_opt(components, aead_pkt, &AesSivCmacOpts { ignore_empty: false })
             }
 
+            #[must_use]
             pub fn decrypt_slice_opt(&self, components: &[&[u8]], aead_pkt: &mut [u8], opts: &AesSivCmacOpts) -> bool {
                 debug_assert!(aead_pkt.len() >= Self::TAG_LEN);
 
@@ -295,6 +297,7 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
                 self.encrypt_slice_opt_detached(components, plaintext_in_ciphertext_out, tag_out, &AesSivCmacOpts { ignore_empty: false })
             }
 
+            #[must_use]
             pub fn decrypt_slice_detached(&self, components: &[&[u8]], ciphertext_in_plaintext_out: &mut [u8], tag_in: &[u8]) -> bool {
                 self.decrypt_slice_opt_detached(components, ciphertext_in_plaintext_out, tag_in, &AesSivCmacOpts { ignore_empty: false })
             }
@@ -346,6 +349,7 @@ macro_rules! impl_block_cipher_with_siv_cmac_mode {
                 tag_out.copy_from_slice(&v[..Self::TAG_LEN]);
             }
 
+            #[must_use]
             pub fn decrypt_slice_opt_detached(&self, components: &[&[u8]], ciphertext_in_plaintext_out: &mut [u8], tag_in: &[u8], opts: &AesSivCmacOpts) -> bool {
                 let clen = ciphertext_in_plaintext_out.len();
                 let tlen = tag_in.len();

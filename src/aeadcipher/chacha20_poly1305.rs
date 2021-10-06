@@ -51,6 +51,7 @@ impl Chacha20Poly1305 {
         self.encrypt_slice_detached(nonce, aad, plaintext_in_ciphertext_out, tag_out)
     }
 
+    #[must_use]
     pub fn decrypt_slice(&self, nonce: &[u8], aad: &[u8], aead_pkt: &mut [u8]) -> bool {
         debug_assert!(aead_pkt.len() >= Self::TAG_LEN);
 
@@ -99,6 +100,7 @@ impl Chacha20Poly1305 {
         tag_out.copy_from_slice(&tag[..Self::TAG_LEN]);
     }
 
+    #[must_use]
     pub fn decrypt_slice_detached(&self, nonce: &[u8], aad: &[u8], ciphertext_in_plaintext_out: &mut [u8], tag_in: &[u8]) -> bool {
         debug_assert_eq!(nonce.len(), Self::NONCE_LEN);
 

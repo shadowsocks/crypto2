@@ -100,8 +100,10 @@ pub trait AeadCipher: Sized {
     fn aead_new(key: &[u8], ) -> Self;
     
     fn aead_encrypt_slice(&self, nonce: &[u8], aad: &[u8], aead_pkt: &mut [u8]);
+    #[must_use]
     fn aead_decrypt_slice(&self, nonce: &[u8], aad: &[u8], aead_pkt: &mut [u8]) -> bool;
     fn aead_encrypt_slice_detached(&self, nonce: &[u8], aad: &[u8], plaintext_in_ciphertext_out: &mut [u8], tag_out: &mut [u8]);
+    #[must_use]
     fn aead_decrypt_slice_detached(&self, nonce: &[u8], aad: &[u8], ciphertext_in_plaintext_out: &mut [u8], tag_in: &[u8]) -> bool;
 }
 
