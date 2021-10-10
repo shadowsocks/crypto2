@@ -1,6 +1,3 @@
-// use crate::util::xor_si128_inplace;
-
-
 #[inline]
 fn add_si512_inplace(a: &mut [u32; Chacha20::STATE_LEN], b: &[u32; Chacha20::STATE_LEN]) {
     for i in 0..Chacha20::STATE_LEN {
@@ -9,21 +6,8 @@ fn add_si512_inplace(a: &mut [u32; Chacha20::STATE_LEN], b: &[u32; Chacha20::STA
 }
 
 #[inline]
-fn xor_si512_inplace(a: &mut [u8], b: &[u32; Chacha20::STATE_LEN]) {
-    // NOTE: 看起来编译器会对这种单独的函数做优化，我们不再需要手动写 AVX2/AVX512 的代码咯。
-    use core::slice;
-    
-    unsafe {
-        let d1 = slice::from_raw_parts_mut(a.as_mut_ptr() as *mut u32, Chacha20::STATE_LEN);
-        for i in 0..Chacha20::STATE_LEN {
-            d1[i] ^= b[i];
-        }
-    }
-}
-
-#[inline]
 fn v512_i8_xor_inplace(a: &mut [u8], b: &[u8]) {
-    for i in 0..64 {
+    for i in 0..Chacha20::BLOCK_LEN {
         a[i] ^= b[i];
     }
 }
@@ -94,17 +78,12 @@ impl Chacha20 {
         initial_state[12] = init_block_counter;
 
         // Nonce (96-bits, little-endian)
-        if cfg!(target_endian = "little") {
-            unsafe {
-                let data: &[u32] = std::slice::from_raw_parts(nonce.as_ptr() as *const u32, nonce.len() / core::mem::size_of::<u32>());
-                initial_state[13..16].copy_from_slice(data);
-            }
-        } else {
-            initial_state[13] = u32::from_le_bytes([nonce[ 0], nonce[ 1], nonce[ 2], nonce[ 3]]);
-            initial_state[14] = u32::from_le_bytes([nonce[ 4], nonce[ 5], nonce[ 6], nonce[ 7]]);
-            initial_state[15] = u32::from_le_bytes([nonce[ 8], nonce[ 9], nonce[10], nonce[11]]);
-        }
+        initial_state[13] = u32::from_le_bytes([nonce[ 0], nonce[ 1], nonce[ 2], nonce[ 3]]);
+        initial_state[14] = u32::from_le_bytes([nonce[ 4], nonce[ 5], nonce[ 6], nonce[ 7]]);
+        initial_state[15] = u32::from_le_bytes([nonce[ 8], nonce[ 9], nonce[10], nonce[11]]);
         
+        let mut keystream = [0u8; Self::BLOCK_LEN];
+
         let mut chunks = plaintext_or_ciphertext.chunks_exact_mut(Self::BLOCK_LEN);
         for plaintext in &mut chunks {
             let mut state = initial_state.clone();
@@ -116,14 +95,9 @@ impl Chacha20 {
             // Update Block Counter
             initial_state[12] = initial_state[12].wrapping_add(1);
 
-            if cfg!(target_endian = "little") {
-                xor_si512_inplace(plaintext, &state);
-            } else {
-                let mut keystream = [0u8; Self::BLOCK_LEN];
-                state_to_keystream(&state, &mut keystream);
-
-                v512_i8_xor_inplace(plaintext, &keystream)
-            }
+            // XOR
+            state_to_keystream(&state, &mut keystream);
+            v512_i8_xor_inplace(plaintext, &keystream);
         }
 
         let rem = chunks.into_remainder();
@@ -140,22 +114,10 @@ impl Chacha20 {
             // Update Block Counter
             // initial_state[12] = initial_state[12].wrapping_add(1);
             
-            if cfg!(target_endian = "little") {
-                unsafe {
-                    use core::slice;
-                    
-                    let keystream = slice::from_raw_parts(state.as_ptr() as *const u8, Self::BLOCK_LEN);
-                    for i in 0..rlen {
-                        rem[i] ^= keystream[i];
-                    }
-                }
-            } else {
-                let mut keystream = [0u8; Self::BLOCK_LEN];
-                state_to_keystream(&state, &mut keystream);
-
-                for i in 0..rlen {
-                    rem[i] ^= keystream[i];
-                }
+            // XOR
+            state_to_keystream(&state, &mut keystream);
+            for i in 0..rlen {
+                rem[i] ^= keystream[i];
             }
         }
     }
