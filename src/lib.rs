@@ -3,10 +3,9 @@
 #![allow(unused_macros, unused_assignments)]
 
 #[cfg(test)]
-extern crate test;
-
-#[cfg(test)]
 extern crate hex;
+#[cfg(test)]
+extern crate test;
 
 pub mod mem;
 mod util;
@@ -27,3 +26,5 @@ pub mod streamcipher;
 
 #[cfg(feature = "openssh")]
 pub mod openssh;
+
+pub mod encoding;

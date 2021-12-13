@@ -1,12 +1,13 @@
 [package]
 name = "crypto2"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["luozijun <luozijun.assistant@gmail.com>"]
 edition = "2018"
 license = "MIT"
-keywords      = [ "Cryptography" ]
-description   = "cryptographic algorithms"
-repository    = "https://github.com/shadowsocks/crypto2"
+keywords = ["crypto", "encryption", "hash", "mac", "aead"]
+categories = ["cryptography"]
+description = "cryptographic algorithms"
+repository = "https://github.com/shadowsocks/crypto2"
 documentation = "https://docs.rs/crypto2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -22,9 +23,8 @@ default = [
     "openssh",
 ]
 
-std     = [ ]
-openssh = [ ]
-
+std = []
+openssh = []
 
 [package.metadata.docs.rs]
 all-features = true
@@ -32,7 +32,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 # https://doc.rust-lang.org/cargo/reference/profiles.html#release
 [profile.release]
-opt-level = 3               # Use slightly better optimizations.
+opt-level = 3 # Use slightly better optimizations.
 debug = false
 debug-assertions = false
 overflow-checks = false

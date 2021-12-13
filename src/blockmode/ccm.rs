@@ -403,7 +403,7 @@ fn test_aes128_ccm_nlen_13_taglen_8_dec() {
         )[..]
     );
 
-    cipher.decrypt_slice(&nonce, &aad, &mut ciphertext_and_tag);
+    assert!(cipher.decrypt_slice(&nonce, &aad, &mut ciphertext_and_tag));
     assert_eq!(&ciphertext_and_tag[..plen], &plaintext[..]);
 }
 
