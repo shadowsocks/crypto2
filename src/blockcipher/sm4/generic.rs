@@ -1,13 +1,13 @@
 // GM/T 0002-2012 SM4分组密码算法标准（中文版本）
 // https://github.com/guanzhi/GM-Standards/blob/master/GMT%E6%AD%A3%E5%BC%8F%E6%A0%87%E5%87%86/GMT%200002-2012%20SM4%E5%88%86%E7%BB%84%E5%AF%86%E7%A0%81%E7%AE%97%E6%B3%95.pdf
-// 
+//
 // GM/T 0002-2012 SM4 Block Cipher Algorithm （English Version）
 // http://www.gmbz.org.cn/upload/2018-04-04/1522788048733065051.pdf
 // http://sca.hainan.gov.cn/xxgk/bzhgf/201804/W020180409400793061524.pdf
-// 
+//
 // ShangMi (SM) Cipher Suites for TLS 1.3
 // https://tools.ietf.org/html/rfc8998
-const FK: [u32; 4]  = [ 0xa3b1_bac6, 0x56aa_3350, 0x677d_9197, 0xb270_22dc ];
+const FK: [u32; 4] = [0xa3b1_bac6, 0x56aa_3350, 0x677d_9197, 0xb270_22dc];
 const CK: [u32; 32] = [
     0x00070e15, 0x1c232a31, 0x383f464d, 0x545b6269, 0x70777e85, 0x8c939aa1, 0xa8afb6bd, 0xc4cbd2d9,
     0xe0e7eef5, 0xfc030a11, 0x181f262d, 0x343b4249, 0x50575e65, 0x6c737a81, 0x888f969d, 0xa4abb2b9,
@@ -34,12 +34,10 @@ const SBOX: [u8; 256] = [
 ];
 
 macro_rules! SM4_T {
-    ($x:expr) => {
-        {
-            let t = sub_bytes($x);
-            t ^ t.rotate_left(2) ^ t.rotate_left(10) ^ t.rotate_left(18) ^ t.rotate_left(24)
-        }
-    }
+    ($x:expr) => {{
+        let t = sub_bytes($x);
+        t ^ t.rotate_left(2) ^ t.rotate_left(10) ^ t.rotate_left(18) ^ t.rotate_left(24)
+    }};
 }
 
 macro_rules! SM4_ROUNDS_ENC {
@@ -48,7 +46,7 @@ macro_rules! SM4_ROUNDS_ENC {
         $x[1] ^= SM4_T!($x[0] ^ $x[2] ^ $x[3] ^ $rk[$i][1]);
         $x[2] ^= SM4_T!($x[0] ^ $x[1] ^ $x[3] ^ $rk[$i][2]);
         $x[3] ^= SM4_T!($x[0] ^ $x[1] ^ $x[2] ^ $rk[$i][3]);
-    }
+    };
 }
 
 macro_rules! SM4_ROUNDS_DEC {
@@ -57,7 +55,7 @@ macro_rules! SM4_ROUNDS_DEC {
         $x[1] ^= SM4_T!($x[0] ^ $x[2] ^ $x[3] ^ $rk[$i][2]);
         $x[2] ^= SM4_T!($x[0] ^ $x[1] ^ $x[3] ^ $rk[$i][1]);
         $x[3] ^= SM4_T!($x[0] ^ $x[1] ^ $x[2] ^ $rk[$i][0]);
-    }
+    };
 }
 
 #[inline]
@@ -69,7 +67,6 @@ fn sub_bytes(input: u32) -> u32 {
     octets[3] = SBOX[octets[3] as usize];
     u32::from_be_bytes(octets)
 }
-
 
 /// GM/T 0002-2012 SM4分组密码算法
 #[derive(Clone)]
@@ -84,19 +81,18 @@ impl core::fmt::Debug for Sm4 {
 }
 
 impl Sm4 {
-    pub const KEY_LEN: usize   = 16;
+    pub const KEY_LEN: usize = 16;
     pub const BLOCK_LEN: usize = 16;
-    
+
     pub const NR: usize = 8; // Rounds
-    
-    
+
     pub fn new(key: &[u8]) -> Self {
         assert_eq!(key.len(), Self::KEY_LEN);
 
         let mut k: [u32; 4] = [
-            u32::from_be_bytes([key[ 0], key[ 1], key[ 2], key[ 3]]) ^ FK[0],
-            u32::from_be_bytes([key[ 4], key[ 5], key[ 6], key[ 7]]) ^ FK[1],
-            u32::from_be_bytes([key[ 8], key[ 9], key[10], key[11]]) ^ FK[2],
+            u32::from_be_bytes([key[0], key[1], key[2], key[3]]) ^ FK[0],
+            u32::from_be_bytes([key[4], key[5], key[6], key[7]]) ^ FK[1],
+            u32::from_be_bytes([key[8], key[9], key[10], key[11]]) ^ FK[2],
             u32::from_be_bytes([key[12], key[13], key[14], key[15]]) ^ FK[3],
         ];
 
@@ -125,9 +121,9 @@ impl Sm4 {
         debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         let mut x: [u32; 4] = [
-            u32::from_be_bytes([block[ 0], block[ 1], block[ 2], block[ 3]]),
-            u32::from_be_bytes([block[ 4], block[ 5], block[ 6], block[ 7]]),
-            u32::from_be_bytes([block[ 8], block[ 9], block[10], block[11]]),
+            u32::from_be_bytes([block[0], block[1], block[2], block[3]]),
+            u32::from_be_bytes([block[4], block[5], block[6], block[7]]),
+            u32::from_be_bytes([block[8], block[9], block[10], block[11]]),
             u32::from_be_bytes([block[12], block[13], block[14], block[15]]),
         ];
 
@@ -140,9 +136,9 @@ impl Sm4 {
         SM4_ROUNDS_ENC!(6, self.rk, x);
         SM4_ROUNDS_ENC!(7, self.rk, x);
 
-        block[ 0.. 4].copy_from_slice(&x[3].to_be_bytes());
-        block[ 4.. 8].copy_from_slice(&x[2].to_be_bytes());
-        block[ 8..12].copy_from_slice(&x[1].to_be_bytes());
+        block[0..4].copy_from_slice(&x[3].to_be_bytes());
+        block[4..8].copy_from_slice(&x[2].to_be_bytes());
+        block[8..12].copy_from_slice(&x[1].to_be_bytes());
         block[12..16].copy_from_slice(&x[0].to_be_bytes());
     }
 
@@ -150,9 +146,9 @@ impl Sm4 {
         debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         let mut x: [u32; 4] = [
-            u32::from_be_bytes([block[ 0], block[ 1], block[ 2], block[ 3]]),
-            u32::from_be_bytes([block[ 4], block[ 5], block[ 6], block[ 7]]),
-            u32::from_be_bytes([block[ 8], block[ 9], block[10], block[11]]),
+            u32::from_be_bytes([block[0], block[1], block[2], block[3]]),
+            u32::from_be_bytes([block[4], block[5], block[6], block[7]]),
+            u32::from_be_bytes([block[8], block[9], block[10], block[11]]),
             u32::from_be_bytes([block[12], block[13], block[14], block[15]]),
         ];
 
@@ -165,9 +161,9 @@ impl Sm4 {
         SM4_ROUNDS_DEC!(1, self.rk, x);
         SM4_ROUNDS_DEC!(0, self.rk, x);
 
-        block[ 0.. 4].copy_from_slice(&x[3].to_be_bytes());
-        block[ 4.. 8].copy_from_slice(&x[2].to_be_bytes());
-        block[ 8..12].copy_from_slice(&x[1].to_be_bytes());
+        block[0..4].copy_from_slice(&x[3].to_be_bytes());
+        block[4..8].copy_from_slice(&x[2].to_be_bytes());
+        block[8..12].copy_from_slice(&x[1].to_be_bytes());
         block[12..16].copy_from_slice(&x[0].to_be_bytes());
     }
 }

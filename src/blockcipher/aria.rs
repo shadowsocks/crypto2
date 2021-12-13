@@ -1,9 +1,9 @@
 // A Description of the ARIA Encryption Algorithm
 // https://tools.ietf.org/html/rfc5794
-// 
+//
 // Korean Standard Block Cipher Algorithm Block Cipher Algorithm ARIA （韩国技术标准局（KATS））
 // http://210.104.33.10/ARIA/index-e.html
-// 
+//
 // Specification of ARIA
 // http://210.104.33.10/ARIA/doc/ARIA-specification-e.pdf
 const SB1: [u8; 256] = [
@@ -86,110 +86,99 @@ const C1: u128 = 0x517cc1b727220a94fe13abe8fa9a6ee0;
 const C2: u128 = 0x6db14acc9e21c820ff28b1d5ef5de2b0;
 const C3: u128 = 0xdb92371d2126e9700324977504e8c90e;
 
-
 macro_rules! FO {
     ($d:expr, $rk:expr) => {
         A!(SL1!($d ^ $rk))
-    }
+    };
 }
 macro_rules! FE {
     ($d:expr, $rk:expr) => {
         A!(SL2!($d ^ $rk))
-    }
+    };
 }
 
 macro_rules! SL1 {
-    ($a:expr) => {
-        {
-            let mut octets = $a.to_be_bytes();
+    ($a:expr) => {{
+        let mut octets = $a.to_be_bytes();
 
-            octets[ 0] = SB1[octets[ 0] as usize];
-            octets[ 1] = SB2[octets[ 1] as usize];
-            octets[ 2] = SB3[octets[ 2] as usize];
-            octets[ 3] = SB4[octets[ 3] as usize];
+        octets[0] = SB1[octets[0] as usize];
+        octets[1] = SB2[octets[1] as usize];
+        octets[2] = SB3[octets[2] as usize];
+        octets[3] = SB4[octets[3] as usize];
 
-            octets[ 4] = SB1[octets[ 4] as usize];
-            octets[ 5] = SB2[octets[ 5] as usize];
-            octets[ 6] = SB3[octets[ 6] as usize];
-            octets[ 7] = SB4[octets[ 7] as usize];
+        octets[4] = SB1[octets[4] as usize];
+        octets[5] = SB2[octets[5] as usize];
+        octets[6] = SB3[octets[6] as usize];
+        octets[7] = SB4[octets[7] as usize];
 
-            octets[ 8] = SB1[octets[ 8] as usize];
-            octets[ 9] = SB2[octets[ 9] as usize];
-            octets[10] = SB3[octets[10] as usize];
-            octets[11] = SB4[octets[11] as usize];
+        octets[8] = SB1[octets[8] as usize];
+        octets[9] = SB2[octets[9] as usize];
+        octets[10] = SB3[octets[10] as usize];
+        octets[11] = SB4[octets[11] as usize];
 
-            octets[12] = SB1[octets[12] as usize];
-            octets[13] = SB2[octets[13] as usize];
-            octets[14] = SB3[octets[14] as usize];
-            octets[15] = SB4[octets[15] as usize];
+        octets[12] = SB1[octets[12] as usize];
+        octets[13] = SB2[octets[13] as usize];
+        octets[14] = SB3[octets[14] as usize];
+        octets[15] = SB4[octets[15] as usize];
 
-            u128::from_be_bytes(octets)
-        }
-    }
+        u128::from_be_bytes(octets)
+    }};
 }
 macro_rules! SL2 {
-    ($a:expr) => {
-        {
-            let mut octets = $a.to_be_bytes();
+    ($a:expr) => {{
+        let mut octets = $a.to_be_bytes();
 
-            octets[ 0] = SB3[octets[ 0] as usize];
-            octets[ 1] = SB4[octets[ 1] as usize];
-            octets[ 2] = SB1[octets[ 2] as usize];
-            octets[ 3] = SB2[octets[ 3] as usize];
+        octets[0] = SB3[octets[0] as usize];
+        octets[1] = SB4[octets[1] as usize];
+        octets[2] = SB1[octets[2] as usize];
+        octets[3] = SB2[octets[3] as usize];
 
-            octets[ 4] = SB3[octets[ 4] as usize];
-            octets[ 5] = SB4[octets[ 5] as usize];
-            octets[ 6] = SB1[octets[ 6] as usize];
-            octets[ 7] = SB2[octets[ 7] as usize];
+        octets[4] = SB3[octets[4] as usize];
+        octets[5] = SB4[octets[5] as usize];
+        octets[6] = SB1[octets[6] as usize];
+        octets[7] = SB2[octets[7] as usize];
 
-            octets[ 8] = SB3[octets[ 8] as usize];
-            octets[ 9] = SB4[octets[ 9] as usize];
-            octets[10] = SB1[octets[10] as usize];
-            octets[11] = SB2[octets[11] as usize];
+        octets[8] = SB3[octets[8] as usize];
+        octets[9] = SB4[octets[9] as usize];
+        octets[10] = SB1[octets[10] as usize];
+        octets[11] = SB2[octets[11] as usize];
 
-            octets[12] = SB3[octets[12] as usize];
-            octets[13] = SB4[octets[13] as usize];
-            octets[14] = SB1[octets[14] as usize];
-            octets[15] = SB2[octets[15] as usize];
+        octets[12] = SB3[octets[12] as usize];
+        octets[13] = SB4[octets[13] as usize];
+        octets[14] = SB1[octets[14] as usize];
+        octets[15] = SB2[octets[15] as usize];
 
-            u128::from_be_bytes(octets)
-        }
-    }
+        u128::from_be_bytes(octets)
+    }};
 }
 
 macro_rules! A {
-    ($a:expr) => {
-        {
-            let [
-                x0, x1,  x2,  x3,  x4,  x5,  x6,  x7, 
-                x8, x9, x10, x11, x12, x13, x14, x15,
-            ] = $a.to_be_bytes();
+    ($a:expr) => {{
+        let [x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15] =
+            $a.to_be_bytes();
 
-            let y0  = x3 ^ x4 ^ x6 ^ x8  ^ x9  ^ x13 ^ x14;
-            let y1  = x2 ^ x5 ^ x7 ^ x8  ^ x9  ^ x12 ^ x15;
-            let y2  = x1 ^ x4 ^ x6 ^ x10 ^ x11 ^ x12 ^ x15;
-            let y3  = x0 ^ x5 ^ x7 ^ x10 ^ x11 ^ x13 ^ x14;
-            let y4  = x0 ^ x2 ^ x5 ^ x8  ^ x11 ^ x14 ^ x15;
-            let y5  = x1 ^ x3 ^ x4 ^ x9  ^ x10 ^ x14 ^ x15;
-            let y6  = x0 ^ x2 ^ x7 ^ x9  ^ x10 ^ x12 ^ x13;
-            let y7  = x1 ^ x3 ^ x6 ^ x8  ^ x11 ^ x12 ^ x13;
-            let y8  = x0 ^ x1 ^ x4 ^ x7  ^ x10 ^ x13 ^ x15;
-            let y9  = x0 ^ x1 ^ x5 ^ x6  ^ x11 ^ x12 ^ x14;
-            let y10 = x2 ^ x3 ^ x5 ^ x6  ^ x8  ^ x13 ^ x15;
-            let y11 = x2 ^ x3 ^ x4 ^ x7  ^ x9  ^ x12 ^ x14;
-            let y12 = x1 ^ x2 ^ x6 ^ x7  ^ x9  ^ x11 ^ x12;
-            let y13 = x0 ^ x3 ^ x6 ^ x7  ^ x8  ^ x10 ^ x13;
-            let y14 = x0 ^ x3 ^ x4 ^ x5  ^ x9  ^ x11 ^ x14;
-            let y15 = x1 ^ x2 ^ x4 ^ x5  ^ x8  ^ x10 ^ x15;
+        let y0 = x3 ^ x4 ^ x6 ^ x8 ^ x9 ^ x13 ^ x14;
+        let y1 = x2 ^ x5 ^ x7 ^ x8 ^ x9 ^ x12 ^ x15;
+        let y2 = x1 ^ x4 ^ x6 ^ x10 ^ x11 ^ x12 ^ x15;
+        let y3 = x0 ^ x5 ^ x7 ^ x10 ^ x11 ^ x13 ^ x14;
+        let y4 = x0 ^ x2 ^ x5 ^ x8 ^ x11 ^ x14 ^ x15;
+        let y5 = x1 ^ x3 ^ x4 ^ x9 ^ x10 ^ x14 ^ x15;
+        let y6 = x0 ^ x2 ^ x7 ^ x9 ^ x10 ^ x12 ^ x13;
+        let y7 = x1 ^ x3 ^ x6 ^ x8 ^ x11 ^ x12 ^ x13;
+        let y8 = x0 ^ x1 ^ x4 ^ x7 ^ x10 ^ x13 ^ x15;
+        let y9 = x0 ^ x1 ^ x5 ^ x6 ^ x11 ^ x12 ^ x14;
+        let y10 = x2 ^ x3 ^ x5 ^ x6 ^ x8 ^ x13 ^ x15;
+        let y11 = x2 ^ x3 ^ x4 ^ x7 ^ x9 ^ x12 ^ x14;
+        let y12 = x1 ^ x2 ^ x6 ^ x7 ^ x9 ^ x11 ^ x12;
+        let y13 = x0 ^ x3 ^ x6 ^ x7 ^ x8 ^ x10 ^ x13;
+        let y14 = x0 ^ x3 ^ x4 ^ x5 ^ x9 ^ x11 ^ x14;
+        let y15 = x1 ^ x2 ^ x4 ^ x5 ^ x8 ^ x10 ^ x15;
 
-            u128::from_be_bytes([
-                y0, y1,  y2,  y3,  y4,  y5,  y6,  y7, 
-                y8, y9, y10, y11, y12, y13, y14, y15,
-            ])
-        }
-    }
+        u128::from_be_bytes([
+            y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14, y15,
+        ])
+    }};
 }
-
 
 #[derive(Clone)]
 pub struct Aria128 {
@@ -203,10 +192,10 @@ impl core::fmt::Debug for Aria128 {
 }
 
 impl Aria128 {
-    pub const KEY_LEN: usize   = 16;
+    pub const KEY_LEN: usize = 16;
     pub const BLOCK_LEN: usize = 16;
 
-    const NR: usize  = 12;
+    const NR: usize = 12;
 
     const CK1: u128 = C1;
     const CK2: u128 = C2;
@@ -216,10 +205,8 @@ impl Aria128 {
         assert_eq!(key.len(), Self::KEY_LEN);
 
         let kl = u128::from_be_bytes([
-            key[ 0], key[ 1], key[ 2], key[ 3], 
-            key[ 4], key[ 5], key[ 6], key[ 7], 
-            key[ 8], key[ 9], key[10], key[11], 
-            key[12], key[13], key[14], key[15], 
+            key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7], key[8], key[9],
+            key[10], key[11], key[12], key[13], key[14], key[15],
         ]);
         let kr = 0u128;
 
@@ -227,34 +214,34 @@ impl Aria128 {
         let w1 = FO!(w0, Self::CK1) ^ kr;
         let w2 = FE!(w1, Self::CK2) ^ w0;
         let w3 = FO!(w2, Self::CK3) ^ w1;
-        
+
         let mut ek = [0u128; Self::NR * 2];
 
-        ek[ 0] = w0 ^ w1.rotate_right(19);
-        ek[ 1] = w1 ^ w2.rotate_right(19);
-        ek[ 2] = w2 ^ w3.rotate_right(19);
-        ek[ 3] = w0.rotate_right(19) ^ w3;
-        ek[ 4] = w0 ^ w1.rotate_right(31);
-        ek[ 5] = w1 ^ w2.rotate_right(31);
-        ek[ 6] = w2 ^ w3.rotate_right(31);
-        ek[ 7] = w0.rotate_right(31) ^ w3;
-        ek[ 8] = w0 ^ w1.rotate_left(61);
-        ek[ 9] = w1 ^ w2.rotate_left(61);
+        ek[0] = w0 ^ w1.rotate_right(19);
+        ek[1] = w1 ^ w2.rotate_right(19);
+        ek[2] = w2 ^ w3.rotate_right(19);
+        ek[3] = w0.rotate_right(19) ^ w3;
+        ek[4] = w0 ^ w1.rotate_right(31);
+        ek[5] = w1 ^ w2.rotate_right(31);
+        ek[6] = w2 ^ w3.rotate_right(31);
+        ek[7] = w0.rotate_right(31) ^ w3;
+        ek[8] = w0 ^ w1.rotate_left(61);
+        ek[9] = w1 ^ w2.rotate_left(61);
         ek[10] = w2 ^ w3.rotate_left(61);
         ek[11] = w0.rotate_left(61) ^ w3;
         ek[12] = w0 ^ w1.rotate_left(31); // KEY-128
 
         ek[13] = A!(ek[11]);
         ek[14] = A!(ek[10]);
-        ek[15] = A!(ek[ 9]);
-        ek[16] = A!(ek[ 8]);
-        ek[17] = A!(ek[ 7]);
-        ek[18] = A!(ek[ 6]);
-        ek[19] = A!(ek[ 5]);
-        ek[20] = A!(ek[ 4]);
-        ek[21] = A!(ek[ 3]);
-        ek[22] = A!(ek[ 2]);
-        ek[23] = A!(ek[ 1]);
+        ek[15] = A!(ek[9]);
+        ek[16] = A!(ek[8]);
+        ek[17] = A!(ek[7]);
+        ek[18] = A!(ek[6]);
+        ek[19] = A!(ek[5]);
+        ek[20] = A!(ek[4]);
+        ek[21] = A!(ek[3]);
+        ek[22] = A!(ek[2]);
+        ek[23] = A!(ek[1]);
 
         Self { ek }
     }
@@ -263,23 +250,21 @@ impl Aria128 {
         debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         let mut p = u128::from_be_bytes([
-            block[ 0], block[ 1], block[ 2], block[ 3], 
-            block[ 4], block[ 5], block[ 6], block[ 7], 
-            block[ 8], block[ 9], block[10], block[11], 
-            block[12], block[13], block[14], block[15], 
+            block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7],
+            block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15],
         ]);
 
-        p = FO!(p, self.ek[0]);                  // Round 1
-        p = FE!(p, self.ek[1]);                  // Round 2
-        p = FO!(p, self.ek[2]);                  // Round 3
-        p = FE!(p, self.ek[3]);                  // Round 4
-        p = FO!(p, self.ek[4]);                  // Round 5
-        p = FE!(p, self.ek[5]);                  // Round 6
-        p = FO!(p, self.ek[6]);                  // Round 7
-        p = FE!(p, self.ek[7]);                  // Round 8
-        p = FO!(p, self.ek[8]);                  // Round 9
-        p = FE!(p, self.ek[9]);                  // Round 10
-        p = FO!(p, self.ek[10]);                 // Round 11
+        p = FO!(p, self.ek[0]); // Round 1
+        p = FE!(p, self.ek[1]); // Round 2
+        p = FO!(p, self.ek[2]); // Round 3
+        p = FE!(p, self.ek[3]); // Round 4
+        p = FO!(p, self.ek[4]); // Round 5
+        p = FE!(p, self.ek[5]); // Round 6
+        p = FO!(p, self.ek[6]); // Round 7
+        p = FE!(p, self.ek[7]); // Round 8
+        p = FO!(p, self.ek[8]); // Round 9
+        p = FE!(p, self.ek[9]); // Round 10
+        p = FO!(p, self.ek[10]); // Round 11
         p = SL2!(p ^ self.ek[11]) ^ self.ek[12]; // Round 12
 
         block[..Self::BLOCK_LEN].copy_from_slice(&p.to_be_bytes());
@@ -289,29 +274,26 @@ impl Aria128 {
         debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         let mut c = u128::from_be_bytes([
-            block[ 0], block[ 1], block[ 2], block[ 3], 
-            block[ 4], block[ 5], block[ 6], block[ 7], 
-            block[ 8], block[ 9], block[10], block[11], 
-            block[12], block[13], block[14], block[15], 
+            block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7],
+            block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15],
         ]);
 
-        c  = FO!(c, self.ek[12]);                // Round 1
-        c  = FE!(c, self.ek[13]);                // Round 2
-        c  = FO!(c, self.ek[14]);                // Round 3
-        c  = FE!(c, self.ek[15]);                // Round 4
-        c  = FO!(c, self.ek[16]);                // Round 5
-        c  = FE!(c, self.ek[17]);                // Round 6
-        c  = FO!(c, self.ek[18]);                // Round 7
-        c  = FE!(c, self.ek[19]);                // Round 8
-        c  = FO!(c, self.ek[20]);                // Round 9
-        c  = FE!(c, self.ek[21]);                // Round 10
-        c  = FO!(c, self.ek[22]);                // Round 11
-        c  = SL2!(c ^ self.ek[23]) ^ self.ek[0]; // Round 12
+        c = FO!(c, self.ek[12]); // Round 1
+        c = FE!(c, self.ek[13]); // Round 2
+        c = FO!(c, self.ek[14]); // Round 3
+        c = FE!(c, self.ek[15]); // Round 4
+        c = FO!(c, self.ek[16]); // Round 5
+        c = FE!(c, self.ek[17]); // Round 6
+        c = FO!(c, self.ek[18]); // Round 7
+        c = FE!(c, self.ek[19]); // Round 8
+        c = FO!(c, self.ek[20]); // Round 9
+        c = FE!(c, self.ek[21]); // Round 10
+        c = FO!(c, self.ek[22]); // Round 11
+        c = SL2!(c ^ self.ek[23]) ^ self.ek[0]; // Round 12
 
         block[..Self::BLOCK_LEN].copy_from_slice(&c.to_be_bytes());
     }
 }
-
 
 #[derive(Clone)]
 pub struct Aria192 {
@@ -325,10 +307,10 @@ impl core::fmt::Debug for Aria192 {
 }
 
 impl Aria192 {
-    pub const KEY_LEN: usize   = 24;
+    pub const KEY_LEN: usize = 24;
     pub const BLOCK_LEN: usize = 16;
 
-    const NR: usize  = 14;
+    const NR: usize = 14;
 
     const CK1: u128 = C2;
     const CK2: u128 = C3;
@@ -338,16 +320,12 @@ impl Aria192 {
         assert_eq!(key.len(), Self::KEY_LEN);
 
         let kl = u128::from_be_bytes([
-            key[ 0], key[ 1], key[ 2], key[ 3], 
-            key[ 4], key[ 5], key[ 6], key[ 7], 
-            key[ 8], key[ 9], key[10], key[11], 
-            key[12], key[13], key[14], key[15], 
+            key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7], key[8], key[9],
+            key[10], key[11], key[12], key[13], key[14], key[15],
         ]);
         let kr = u128::from_be_bytes([
-            key[16], key[17], key[18], key[19], 
-            key[20], key[21], key[22], key[23], 
-            0x00, 0x00, 0x00, 0x00, 
-            0x00, 0x00, 0x00, 0x00, 
+            key[16], key[17], key[18], key[19], key[20], key[21], key[22], key[23], 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ]);
 
         let w0 = kl;
@@ -357,16 +335,16 @@ impl Aria192 {
 
         let mut ek = [0u128; Self::NR * 2];
 
-        ek[ 0] = w0 ^ w1.rotate_right(19);
-        ek[ 1] = w1 ^ w2.rotate_right(19);
-        ek[ 2] = w2 ^ w3.rotate_right(19);
-        ek[ 3] = w0.rotate_right(19) ^ w3;
-        ek[ 4] = w0 ^ w1.rotate_right(31);
-        ek[ 5] = w1 ^ w2.rotate_right(31);
-        ek[ 6] = w2 ^ w3.rotate_right(31);
-        ek[ 7] = w0.rotate_right(31) ^ w3;
-        ek[ 8] = w0 ^ w1.rotate_left(61);
-        ek[ 9] = w1 ^ w2.rotate_left(61);
+        ek[0] = w0 ^ w1.rotate_right(19);
+        ek[1] = w1 ^ w2.rotate_right(19);
+        ek[2] = w2 ^ w3.rotate_right(19);
+        ek[3] = w0.rotate_right(19) ^ w3;
+        ek[4] = w0 ^ w1.rotate_right(31);
+        ek[5] = w1 ^ w2.rotate_right(31);
+        ek[6] = w2 ^ w3.rotate_right(31);
+        ek[7] = w0.rotate_right(31) ^ w3;
+        ek[8] = w0 ^ w1.rotate_left(61);
+        ek[9] = w1 ^ w2.rotate_left(61);
         ek[10] = w2 ^ w3.rotate_left(61);
         ek[11] = w0.rotate_left(61) ^ w3;
         ek[12] = w0 ^ w1.rotate_left(31); // KEY-128
@@ -377,15 +355,15 @@ impl Aria192 {
         ek[16] = A!(ek[12]);
         ek[17] = A!(ek[11]);
         ek[18] = A!(ek[10]);
-        ek[19] = A!(ek[ 9]);
-        ek[20] = A!(ek[ 8]);
-        ek[21] = A!(ek[ 7]);
-        ek[22] = A!(ek[ 6]);
-        ek[23] = A!(ek[ 5]);
-        ek[24] = A!(ek[ 4]);
-        ek[25] = A!(ek[ 3]);
-        ek[26] = A!(ek[ 2]);
-        ek[27] = A!(ek[ 1]);
+        ek[19] = A!(ek[9]);
+        ek[20] = A!(ek[8]);
+        ek[21] = A!(ek[7]);
+        ek[22] = A!(ek[6]);
+        ek[23] = A!(ek[5]);
+        ek[24] = A!(ek[4]);
+        ek[25] = A!(ek[3]);
+        ek[26] = A!(ek[2]);
+        ek[27] = A!(ek[1]);
 
         Self { ek }
     }
@@ -394,27 +372,25 @@ impl Aria192 {
         debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         let mut p = u128::from_be_bytes([
-            block[ 0], block[ 1], block[ 2], block[ 3], 
-            block[ 4], block[ 5], block[ 6], block[ 7], 
-            block[ 8], block[ 9], block[10], block[11], 
-            block[12], block[13], block[14], block[15], 
+            block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7],
+            block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15],
         ]);
-        
-        p = FO!(p, self.ek[0]);                  // Round 1
-        p = FE!(p, self.ek[1]);                  // Round 2
-        p = FO!(p, self.ek[2]);                  // Round 3
-        p = FE!(p, self.ek[3]);                  // Round 4
-        p = FO!(p, self.ek[4]);                  // Round 5
-        p = FE!(p, self.ek[5]);                  // Round 6
-        p = FO!(p, self.ek[6]);                  // Round 7
-        p = FE!(p, self.ek[7]);                  // Round 8
-        p = FO!(p, self.ek[8]);                  // Round 9
-        p = FE!(p, self.ek[9]);                  // Round 10
-        p = FO!(p, self.ek[10]);                 // Round 11
-        p = FE!(p, self.ek[11]);                 // Round 12
-        p = FO!(p, self.ek[12]);                 // Round 13
+
+        p = FO!(p, self.ek[0]); // Round 1
+        p = FE!(p, self.ek[1]); // Round 2
+        p = FO!(p, self.ek[2]); // Round 3
+        p = FE!(p, self.ek[3]); // Round 4
+        p = FO!(p, self.ek[4]); // Round 5
+        p = FE!(p, self.ek[5]); // Round 6
+        p = FO!(p, self.ek[6]); // Round 7
+        p = FE!(p, self.ek[7]); // Round 8
+        p = FO!(p, self.ek[8]); // Round 9
+        p = FE!(p, self.ek[9]); // Round 10
+        p = FO!(p, self.ek[10]); // Round 11
+        p = FE!(p, self.ek[11]); // Round 12
+        p = FO!(p, self.ek[12]); // Round 13
         p = SL2!(p ^ self.ek[13]) ^ self.ek[14]; // Round 14
-        
+
         block[..Self::BLOCK_LEN].copy_from_slice(&p.to_be_bytes());
     }
 
@@ -422,31 +398,28 @@ impl Aria192 {
         debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         let mut c = u128::from_be_bytes([
-            block[ 0], block[ 1], block[ 2], block[ 3], 
-            block[ 4], block[ 5], block[ 6], block[ 7], 
-            block[ 8], block[ 9], block[10], block[11], 
-            block[12], block[13], block[14], block[15], 
+            block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7],
+            block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15],
         ]);
-        
-        c = FO!(c, self.ek[14]);                // Round 1
-        c = FE!(c, self.ek[15]);                // Round 2
-        c = FO!(c, self.ek[16]);                // Round 3
-        c = FE!(c, self.ek[17]);                // Round 4
-        c = FO!(c, self.ek[18]);                // Round 5
-        c = FE!(c, self.ek[19]);                // Round 6
-        c = FO!(c, self.ek[20]);                // Round 7
-        c = FE!(c, self.ek[21]);                // Round 8
-        c = FO!(c, self.ek[22]);                // Round 9
-        c = FE!(c, self.ek[23]);                // Round 10
-        c = FO!(c, self.ek[24]);                // Round 11
-        c = FE!(c, self.ek[25]);                // Round 12
-        c = FO!(c, self.ek[26]);                // Round 13
+
+        c = FO!(c, self.ek[14]); // Round 1
+        c = FE!(c, self.ek[15]); // Round 2
+        c = FO!(c, self.ek[16]); // Round 3
+        c = FE!(c, self.ek[17]); // Round 4
+        c = FO!(c, self.ek[18]); // Round 5
+        c = FE!(c, self.ek[19]); // Round 6
+        c = FO!(c, self.ek[20]); // Round 7
+        c = FE!(c, self.ek[21]); // Round 8
+        c = FO!(c, self.ek[22]); // Round 9
+        c = FE!(c, self.ek[23]); // Round 10
+        c = FO!(c, self.ek[24]); // Round 11
+        c = FE!(c, self.ek[25]); // Round 12
+        c = FO!(c, self.ek[26]); // Round 13
         c = SL2!(c ^ self.ek[27]) ^ self.ek[0]; // Round 14
-        
+
         block[..Self::BLOCK_LEN].copy_from_slice(&c.to_be_bytes());
     }
 }
-
 
 #[derive(Clone)]
 pub struct Aria256 {
@@ -460,10 +433,10 @@ impl core::fmt::Debug for Aria256 {
 }
 
 impl Aria256 {
-    pub const KEY_LEN: usize   = 32;
+    pub const KEY_LEN: usize = 32;
     pub const BLOCK_LEN: usize = 16;
 
-    const NR: usize  = 16;
+    const NR: usize = 16;
 
     const CK1: u128 = C3;
     const CK2: u128 = C1;
@@ -473,16 +446,12 @@ impl Aria256 {
         assert_eq!(key.len(), Self::KEY_LEN);
 
         let kl = u128::from_be_bytes([
-            key[ 0], key[ 1], key[ 2], key[ 3], 
-            key[ 4], key[ 5], key[ 6], key[ 7], 
-            key[ 8], key[ 9], key[10], key[11], 
-            key[12], key[13], key[14], key[15], 
+            key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7], key[8], key[9],
+            key[10], key[11], key[12], key[13], key[14], key[15],
         ]);
         let kr = u128::from_be_bytes([
-            key[16], key[17], key[18], key[19], 
-            key[20], key[21], key[22], key[23], 
-            key[24], key[25], key[26], key[27], 
-            key[28], key[29], key[30], key[31], 
+            key[16], key[17], key[18], key[19], key[20], key[21], key[22], key[23], key[24],
+            key[25], key[26], key[27], key[28], key[29], key[30], key[31],
         ]);
 
         let w0 = kl;
@@ -492,16 +461,16 @@ impl Aria256 {
 
         let mut ek = [0u128; Self::NR * 2];
 
-        ek[ 0] = w0 ^ w1.rotate_right(19);
-        ek[ 1] = w1 ^ w2.rotate_right(19);
-        ek[ 2] = w2 ^ w3.rotate_right(19);
-        ek[ 3] = w0.rotate_right(19) ^ w3;
-        ek[ 4] = w0 ^ w1.rotate_right(31);
-        ek[ 5] = w1 ^ w2.rotate_right(31);
-        ek[ 6] = w2 ^ w3.rotate_right(31);
-        ek[ 7] = w0.rotate_right(31) ^ w3;
-        ek[ 8] = w0 ^ w1.rotate_left(61);
-        ek[ 9] = w1 ^ w2.rotate_left(61);
+        ek[0] = w0 ^ w1.rotate_right(19);
+        ek[1] = w1 ^ w2.rotate_right(19);
+        ek[2] = w2 ^ w3.rotate_right(19);
+        ek[3] = w0.rotate_right(19) ^ w3;
+        ek[4] = w0 ^ w1.rotate_right(31);
+        ek[5] = w1 ^ w2.rotate_right(31);
+        ek[6] = w2 ^ w3.rotate_right(31);
+        ek[7] = w0.rotate_right(31) ^ w3;
+        ek[8] = w0 ^ w1.rotate_left(61);
+        ek[9] = w1 ^ w2.rotate_left(61);
         ek[10] = w2 ^ w3.rotate_left(61);
         ek[11] = w0.rotate_left(61) ^ w3;
         ek[12] = w0 ^ w1.rotate_left(31); // KEY-128
@@ -516,15 +485,15 @@ impl Aria256 {
         ek[20] = A!(ek[12]);
         ek[21] = A!(ek[11]);
         ek[22] = A!(ek[10]);
-        ek[23] = A!(ek[ 9]);
-        ek[24] = A!(ek[ 8]);
-        ek[25] = A!(ek[ 7]);
-        ek[26] = A!(ek[ 6]);
-        ek[27] = A!(ek[ 5]);
-        ek[28] = A!(ek[ 4]);
-        ek[29] = A!(ek[ 3]);
-        ek[30] = A!(ek[ 2]);
-        ek[31] = A!(ek[ 1]);
+        ek[23] = A!(ek[9]);
+        ek[24] = A!(ek[8]);
+        ek[25] = A!(ek[7]);
+        ek[26] = A!(ek[6]);
+        ek[27] = A!(ek[5]);
+        ek[28] = A!(ek[4]);
+        ek[29] = A!(ek[3]);
+        ek[30] = A!(ek[2]);
+        ek[31] = A!(ek[1]);
 
         Self { ek }
     }
@@ -533,27 +502,25 @@ impl Aria256 {
         debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         let mut p = u128::from_be_bytes([
-            block[ 0], block[ 1], block[ 2], block[ 3], 
-            block[ 4], block[ 5], block[ 6], block[ 7], 
-            block[ 8], block[ 9], block[10], block[11], 
-            block[12], block[13], block[14], block[15], 
+            block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7],
+            block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15],
         ]);
-        
-        p = FO!(p, self.ek[0]);                  // Round 1
-        p = FE!(p, self.ek[1]);                  // Round 2
-        p = FO!(p, self.ek[2]);                  // Round 3
-        p = FE!(p, self.ek[3]);                  // Round 4
-        p = FO!(p, self.ek[4]);                  // Round 5
-        p = FE!(p, self.ek[5]);                  // Round 6
-        p = FO!(p, self.ek[6]);                  // Round 7
-        p = FE!(p, self.ek[7]);                  // Round 8
-        p = FO!(p, self.ek[8]);                  // Round 9
-        p = FE!(p, self.ek[9]);                  // Round 10
-        p = FO!(p, self.ek[10]);                 // Round 11
-        p = FE!(p, self.ek[11]);                 // Round 12
-        p = FO!(p, self.ek[12]);                 // Round 13
-        p = FE!(p, self.ek[13]);                 // Round 14
-        p = FO!(p, self.ek[14]);                 // Round 15
+
+        p = FO!(p, self.ek[0]); // Round 1
+        p = FE!(p, self.ek[1]); // Round 2
+        p = FO!(p, self.ek[2]); // Round 3
+        p = FE!(p, self.ek[3]); // Round 4
+        p = FO!(p, self.ek[4]); // Round 5
+        p = FE!(p, self.ek[5]); // Round 6
+        p = FO!(p, self.ek[6]); // Round 7
+        p = FE!(p, self.ek[7]); // Round 8
+        p = FO!(p, self.ek[8]); // Round 9
+        p = FE!(p, self.ek[9]); // Round 10
+        p = FO!(p, self.ek[10]); // Round 11
+        p = FE!(p, self.ek[11]); // Round 12
+        p = FO!(p, self.ek[12]); // Round 13
+        p = FE!(p, self.ek[13]); // Round 14
+        p = FO!(p, self.ek[14]); // Round 15
         p = SL2!(p ^ self.ek[15]) ^ self.ek[16]; // Round 16
 
         block[..Self::BLOCK_LEN].copy_from_slice(&p.to_be_bytes());
@@ -563,42 +530,39 @@ impl Aria256 {
         debug_assert_eq!(block.len(), Self::BLOCK_LEN);
 
         let mut c = u128::from_be_bytes([
-            block[ 0], block[ 1], block[ 2], block[ 3], 
-            block[ 4], block[ 5], block[ 6], block[ 7], 
-            block[ 8], block[ 9], block[10], block[11], 
-            block[12], block[13], block[14], block[15], 
+            block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7],
+            block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15],
         ]);
-        
-        c = FO!(c, self.ek[16]);                // Round 1
-        c = FE!(c, self.ek[17]);                // Round 2
-        c = FO!(c, self.ek[18]);                // Round 3
-        c = FE!(c, self.ek[19]);                // Round 4
-        c = FO!(c, self.ek[20]);                // Round 5
-        c = FE!(c, self.ek[21]);                // Round 6
-        c = FO!(c, self.ek[22]);                // Round 7
-        c = FE!(c, self.ek[23]);                // Round 8
-        c = FO!(c, self.ek[24]);                // Round 9
-        c = FE!(c, self.ek[25]);                // Round 10
-        c = FO!(c, self.ek[26]);                // Round 11
-        c = FE!(c, self.ek[27]);                // Round 12
-        c = FO!(c, self.ek[28]);                // Round 13
-        c = FE!(c, self.ek[29]);                // Round 14
-        c = FO!(c, self.ek[30]);                // Round 15
+
+        c = FO!(c, self.ek[16]); // Round 1
+        c = FE!(c, self.ek[17]); // Round 2
+        c = FO!(c, self.ek[18]); // Round 3
+        c = FE!(c, self.ek[19]); // Round 4
+        c = FO!(c, self.ek[20]); // Round 5
+        c = FE!(c, self.ek[21]); // Round 6
+        c = FO!(c, self.ek[22]); // Round 7
+        c = FE!(c, self.ek[23]); // Round 8
+        c = FO!(c, self.ek[24]); // Round 9
+        c = FE!(c, self.ek[25]); // Round 10
+        c = FO!(c, self.ek[26]); // Round 11
+        c = FE!(c, self.ek[27]); // Round 12
+        c = FO!(c, self.ek[28]); // Round 13
+        c = FE!(c, self.ek[29]); // Round 14
+        c = FO!(c, self.ek[30]); // Round 15
         c = SL2!(c ^ self.ek[31]) ^ self.ek[0]; // Round 16
 
         block[..Self::BLOCK_LEN].copy_from_slice(&c.to_be_bytes());
     }
 }
 
-
 #[test]
 fn test_aria128() {
     // A.1.  128-Bit Key
     // https://tools.ietf.org/html/rfc5794#appendix-A.1
-    let key        = hex::decode("000102030405060708090a0b0c0d0e0f").unwrap();
-    let plaintext  = hex::decode("00112233445566778899aabbccddeeff").unwrap();
+    let key = hex::decode("000102030405060708090a0b0c0d0e0f").unwrap();
+    let plaintext = hex::decode("00112233445566778899aabbccddeeff").unwrap();
     let ciphertext = hex::decode("d718fbd6ab644c739da95f3be6451778").unwrap();
-    
+
     let mut cleartext = plaintext.clone();
 
     let cipher = Aria128::new(&key);
@@ -614,9 +578,12 @@ fn test_aria128() {
 fn test_aria192() {
     // A.2.  192-Bit Key
     // https://tools.ietf.org/html/rfc5794#appendix-A.2
-    let key        = hex::decode("000102030405060708090a0b0c0d0e0f\
-1011121314151617").unwrap();
-    let plaintext  = hex::decode("00112233445566778899aabbccddeeff").unwrap();
+    let key = hex::decode(
+        "000102030405060708090a0b0c0d0e0f\
+1011121314151617",
+    )
+    .unwrap();
+    let plaintext = hex::decode("00112233445566778899aabbccddeeff").unwrap();
     let ciphertext = hex::decode("26449c1805dbe7aa25a468ce263a9e79").unwrap();
 
     let mut cleartext = plaintext.clone();
@@ -634,11 +601,14 @@ fn test_aria192() {
 fn test_aria256() {
     // A.3.  256-Bit Key
     // https://tools.ietf.org/html/rfc5794#appendix-A.3
-    let key        = hex::decode("000102030405060708090a0b0c0d0e0f\
-101112131415161718191a1b1c1d1e1f").unwrap();
-    let plaintext  = hex::decode("00112233445566778899aabbccddeeff").unwrap();
+    let key = hex::decode(
+        "000102030405060708090a0b0c0d0e0f\
+101112131415161718191a1b1c1d1e1f",
+    )
+    .unwrap();
+    let plaintext = hex::decode("00112233445566778899aabbccddeeff").unwrap();
     let ciphertext = hex::decode("f92bd7c79fb72e2f2b8f80c1972d24fc").unwrap();
-    
+
     let mut cleartext = plaintext.clone();
 
     let cipher = Aria256::new(&key);

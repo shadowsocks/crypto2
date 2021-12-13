@@ -4,13 +4,12 @@ use core::arch::x86::*;
 use core::arch::x86_64::*;
 
 // Intel® Carry-Less Multiplication Instruction and its Usage for Computing the GCM Mode
-// 
+//
 // https://www.intel.cn/content/www/cn/zh/processors/carry-less-multiplication-instruction-in-gcm-mode-paper.html
-// 
+//
 // 代码参考：
-// 
+//
 // https://github.com/Shay-Gueron/AES-GCM-SIV/blob/master/AES_GCM_SIV_128/AES_GCM_SIV_128_C_Intrinsics_Code/polyval.c
-
 
 #[derive(Clone)]
 pub struct Polyval {
@@ -19,9 +18,9 @@ pub struct Polyval {
 }
 
 impl Polyval {
-    pub const KEY_LEN: usize   = 16;
+    pub const KEY_LEN: usize = 16;
     pub const BLOCK_LEN: usize = 16;
-    pub const TAG_LEN: usize   = 16;
+    pub const TAG_LEN: usize = 16;
 
     #[inline(always)]
     pub fn new(k: &[u8]) -> Self {
@@ -31,11 +30,11 @@ impl Polyval {
     #[target_feature(enable = "sse2,pclmulqdq")]
     unsafe fn new_simd(k: &[u8]) -> Self {
         assert_eq!(k.len(), Self::KEY_LEN);
-        
+
         let h = _mm_setzero_si128();
         let key = _mm_loadu_si128(k.as_ptr() as *const __m128i);
 
-        Self { key, h  }
+        Self { key, h }
     }
 
     #[inline]

@@ -1,12 +1,11 @@
-use crate::mem::constant_time_eq;
 use crate::mac::Poly1305;
+use crate::mem::constant_time_eq;
 
 mod chacha20;
 use self::chacha20::Chacha20;
 
-
 /// ChaCha20 and Poly1305 for OpenSSH Protocols (chacha20-poly1305@openssh.com)
-/// 
+///
 /// <https://github.com/openbsd/src/blob/master/usr.bin/ssh/PROTOCOL.chacha20poly1305>
 #[derive(Clone)]
 pub struct Chacha20Poly1305 {
@@ -21,24 +20,23 @@ impl core::fmt::Debug for Chacha20Poly1305 {
 }
 
 impl Chacha20Poly1305 {
-    pub const KEY_LEN: usize   = Chacha20::KEY_LEN * 2; // 64 bytes
-    pub const BLOCK_LEN: usize = Chacha20::BLOCK_LEN;   // 64 bytes
-    pub const NONCE_LEN: usize = Chacha20::NONCE_LEN;   //  8 bytes
-    pub const TAG_LEN: usize   = Poly1305::TAG_LEN;     // 16 bytes
+    pub const KEY_LEN: usize = Chacha20::KEY_LEN * 2; // 64 bytes
+    pub const BLOCK_LEN: usize = Chacha20::BLOCK_LEN; // 64 bytes
+    pub const NONCE_LEN: usize = Chacha20::NONCE_LEN; //  8 bytes
+    pub const TAG_LEN: usize = Poly1305::TAG_LEN; // 16 bytes
 
-    pub const P_MAX: usize = 274877906880;                // (2^32 - 1) * BLOCK_LEN
+    pub const P_MAX: usize = 274877906880; // (2^32 - 1) * BLOCK_LEN
     pub const C_MAX: usize = Self::P_MAX + Self::TAG_LEN; // 274,877,906,896
     pub const N_MIN: usize = Self::NONCE_LEN;
     pub const N_MAX: usize = Self::NONCE_LEN;
-    
+
     pub const PKT_OCTETS_LEN: usize = 4;
-    
 
     pub fn new(key: &[u8]) -> Self {
         assert_eq!(Self::KEY_LEN / 2, Poly1305::KEY_LEN);
         assert_eq!(key.len(), Self::KEY_LEN);
 
-        // K_2 is used in conjunction with poly1305 to build an AEAD 
+        // K_2 is used in conjunction with poly1305 to build an AEAD
         // that is used to encrypt and authenticate the entire packet.
         let k2 = &key[..Chacha20::KEY_LEN];
         // K_1 is used only to encrypt the 4 byte packet length field.
@@ -72,7 +70,13 @@ impl Chacha20Poly1305 {
         self.decrypt_slice_detached(pkt_seq_num, pkt_len, ciphertext_in_plaintext_out, &tag_in)
     }
 
-    pub fn encrypt_slice_detached(&mut self, pkt_seq_num: u32, pkt_len: &mut [u8], plaintext_in_ciphertext_out: &mut [u8], tag_out: &mut [u8]) {
+    pub fn encrypt_slice_detached(
+        &mut self,
+        pkt_seq_num: u32,
+        pkt_len: &mut [u8],
+        plaintext_in_ciphertext_out: &mut [u8],
+        tag_out: &mut [u8],
+    ) {
         let plen = plaintext_in_ciphertext_out.len();
         let tlen = tag_out.len();
 
@@ -87,7 +91,8 @@ impl Chacha20Poly1305 {
         self.c1.encrypt_slice(pkt_seq_num, 0, pkt_len);
 
         // Set Chacha's block counter to 1
-        self.c2.encrypt_slice(pkt_seq_num, 1, plaintext_in_ciphertext_out);
+        self.c2
+            .encrypt_slice(pkt_seq_num, 1, plaintext_in_ciphertext_out);
 
         // calculate and append tag
         // void poly1305_auth(unsigned char out[POLY1305_TAGLEN], const unsigned char *m, size_t inlen, const unsigned char key[POLY1305_KEYLEN]) {
@@ -101,7 +106,13 @@ impl Chacha20Poly1305 {
         tag_out.copy_from_slice(&tag[..Self::TAG_LEN]);
     }
 
-    pub fn decrypt_slice_detached(&mut self, pkt_seq_num: u32, pkt_len: &mut [u8], ciphertext_in_plaintext_out: &mut [u8], tag_in: &[u8]) -> bool {
+    pub fn decrypt_slice_detached(
+        &mut self,
+        pkt_seq_num: u32,
+        pkt_len: &mut [u8],
+        ciphertext_in_plaintext_out: &mut [u8],
+        tag_in: &[u8],
+    ) -> bool {
         let clen = ciphertext_in_plaintext_out.len();
         let tlen = tag_in.len();
 
@@ -126,7 +137,8 @@ impl Chacha20Poly1305 {
             self.c1.decrypt_slice(pkt_seq_num, 0, pkt_len);
 
             // Set Chacha's block counter to 1
-            self.c2.decrypt_slice(pkt_seq_num, 1, ciphertext_in_plaintext_out);
+            self.c2
+                .decrypt_slice(pkt_seq_num, 1, ciphertext_in_plaintext_out);
         }
 
         is_match

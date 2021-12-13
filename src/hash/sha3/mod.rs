@@ -1,22 +1,21 @@
 // This Standard specifies the Secure Hash Algorithm-3 (SHA-3)
 // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf
-// 
+//
 // C code
 // https://github.com/mjosaarinen/tiny_sha3/blob/master/sha3.c
 
-
 // 5 KECCAK
 //   5.1 Specification of pad10*1
-// 
+//
 // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf
-// 
+//
 // Input:
 //   positive integer x;
 //   non-negative integer m.
-// 
+//
 // Output:
 //   string P such that m + len(P) is a positive multiple of x.
-// 
+//
 // Steps:
 //   1. Let k = (– m – 2) mod x.
 //   2. Return P = 1 || 0ᵏ ｜｜ 1.

@@ -13,9 +13,9 @@ pub struct GHash {
 }
 
 impl GHash {
-    pub const KEY_LEN: usize   = 16;
+    pub const KEY_LEN: usize = 16;
     pub const BLOCK_LEN: usize = 16;
-    pub const TAG_LEN: usize   = 16;
+    pub const TAG_LEN: usize = 16;
 
     #[inline(always)]
     pub fn new(key: &[u8; Self::KEY_LEN]) -> Self {
@@ -25,14 +25,14 @@ impl GHash {
     #[target_feature(enable = "sse2,pclmulqdq")]
     unsafe fn new_simd(key: &[u8; Self::KEY_LEN]) -> Self {
         let key = key.clone();
-        
+
         let tag = _mm_setzero_si128();
         let vm = _mm_setr_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
         let key = _mm_shuffle_epi8(_mm_loadu_si128(key.as_ptr() as *const __m128i), vm);
 
-        Self { key, buf: tag, }
+        Self { key, buf: tag }
     }
-    
+
     // Performing Ghash Using Algorithms 1 and 5 (C)
     #[inline]
     unsafe fn gf_mul(&mut self, x: &[u8]) {
@@ -87,7 +87,7 @@ impl GHash {
         tmp2 = _mm_xor_si128(tmp2, tmp8);
         tmp3 = _mm_xor_si128(tmp3, tmp2);
         tmp6 = _mm_xor_si128(tmp6, tmp3);
-        
+
         _mm_storeu_si128(&mut self.buf as _, tmp6);
     }
 
@@ -130,8 +130,10 @@ impl GHash {
         let mut out = [0u8; Self::TAG_LEN];
 
         let vm = _mm_setr_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-        _mm_storeu_si128(out.as_mut_ptr() as *mut __m128i, _mm_shuffle_epi8(self.buf, vm));
+        _mm_storeu_si128(
+            out.as_mut_ptr() as *mut __m128i,
+            _mm_shuffle_epi8(self.buf, vm),
+        );
         out
     }
 }
-

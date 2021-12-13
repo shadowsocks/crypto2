@@ -1,6 +1,5 @@
-mod xor;
 mod and;
+mod xor;
 
-
-pub use self::xor::*;
 pub use self::and::*;
+pub use self::xor::*;

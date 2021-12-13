@@ -1,6 +1,6 @@
 // RC4 Source Code
 // http://cypherpunks.venona.com/archive/1994/09/msg00304.html
-// 
+//
 // https://en.wikipedia.org/wiki/RC4
 const INIT_STATE: [u8; 256] = [
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -21,7 +21,6 @@ const INIT_STATE: [u8; 256] = [
     0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
 ];
 
-
 /// RC4 (Rivest Cipher 4 also known as ARC4 or ARCFOUR)
 #[derive(Clone)]
 pub struct Rc4 {
@@ -37,9 +36,8 @@ impl core::fmt::Debug for Rc4 {
 }
 
 impl Rc4 {
-    pub const MIN_KEY_LEN: usize =   1; // In bytes
+    pub const MIN_KEY_LEN: usize = 1; // In bytes
     pub const MAX_KEY_LEN: usize = 256; // In bytes
-
 
     pub fn new(key: &[u8]) -> Self {
         assert!(key.len() >= Self::MIN_KEY_LEN && key.len() <= Self::MAX_KEY_LEN);
@@ -50,12 +48,14 @@ impl Rc4 {
         let mut index1 = 0u8;
         let mut index2 = 0u8;
         for counter in 0..256 {
-            index2 = key[index1 as usize].wrapping_add(state[counter]).wrapping_add(index2);
+            index2 = key[index1 as usize]
+                .wrapping_add(state[counter])
+                .wrapping_add(index2);
             state.swap(counter as usize, index2 as usize);
             index1 = index1.wrapping_add(1) % key_len;
         }
 
-        Self { x: 0, y: 0, state, }
+        Self { x: 0, y: 0, state }
     }
 
     #[inline]
@@ -64,7 +64,7 @@ impl Rc4 {
 
         for counter in 0..data.len() {
             self.x = self.x.wrapping_add(1);
-            self.y = self.y.wrapping_add(self.state[self.x as usize] );
+            self.y = self.y.wrapping_add(self.state[self.x as usize]);
 
             self.state.swap(self.x as usize, self.y as usize);
 
@@ -79,12 +79,11 @@ impl Rc4 {
     pub fn encrypt_slice(&mut self, plaintext_and_ciphertext: &mut [u8]) {
         self.in_place(plaintext_and_ciphertext);
     }
-    
+
     pub fn decrypt_slice(&mut self, ciphertext_and_plaintext: &mut [u8]) {
         self.in_place(ciphertext_and_plaintext);
     }
 }
-
 
 #[test]
 fn test_rc4() {
@@ -95,24 +94,27 @@ fn test_rc4() {
     let plaintext = b"Plaintext";
     let mut ciphertext = plaintext.clone();
     rc4.encrypt_slice(&mut ciphertext);
-    assert_eq!(&ciphertext[..],
-        &hex::decode("BBF316E8D940AF0AD3").unwrap()[..]);
+    assert_eq!(
+        &ciphertext[..],
+        &hex::decode("BBF316E8D940AF0AD3").unwrap()[..]
+    );
 
     let key: &[u8] = b"Wiki";
     let mut rc4 = Rc4::new(&key);
     let plaintext = b"pedia";
     let mut ciphertext = plaintext.clone();
     rc4.encrypt_slice(&mut ciphertext);
-    assert_eq!(&ciphertext[..],
-        &hex::decode("1021BF0420").unwrap()[..]);
+    assert_eq!(&ciphertext[..], &hex::decode("1021BF0420").unwrap()[..]);
 
     let key: &[u8] = b"Secret";
     let mut rc4 = Rc4::new(&key);
     let plaintext = b"Attack at dawn";
     let mut ciphertext = plaintext.clone();
     rc4.encrypt_slice(&mut ciphertext);
-    assert_eq!(&ciphertext[..],
-        &hex::decode("45A01F645FC35B383552544B9BF5").unwrap()[..]);
+    assert_eq!(
+        &ciphertext[..],
+        &hex::decode("45A01F645FC35B383552544B9BF5").unwrap()[..]
+    );
 
     // 2.  Test Vectors for RC4
     // https://tools.ietf.org/html/rfc6229#section-2

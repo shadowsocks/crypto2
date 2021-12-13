@@ -1,20 +1,19 @@
 mod md2;
 mod md4;
 mod md5;
-mod sm3;
 mod sha1;
 mod sha2;
+mod sm3;
 // TODO: 暂未实现
 mod sha3;
 
 pub use self::md2::*;
 pub use self::md4::*;
 pub use self::md5::*;
-pub use self::sm3::*;
 pub use self::sha1::*;
 pub use self::sha2::*;
 pub use self::sha3::*;
-
+pub use self::sm3::*;
 
 // const HEX_CHARS_LOWER: &[u8; 16] = b"0123456789abcdef";
 // #[allow(dead_code)]
@@ -28,7 +27,6 @@ pub use self::sha3::*;
 
 //     (high, low)
 // }
-
 
 // pub trait Digest: Clone + Copy + AsRef<[u8]> + AsMut<[u8]> + Sized {
 
@@ -52,10 +50,8 @@ pub use self::sha3::*;
 // impl HexDigest for HexStr<[u8; 48 * 2 + 2]> { }
 // impl HexDigest for HexStr<[u8; 64 * 2 + 2]> { }
 
-
 // // TODO: multihash
 // // https://github.com/multiformats/multicodec/blob/master/table.csv
-
 
 // #[derive(Clone, Copy)]
 // pub struct HexStr<T: Copy + Clone + AsRef<[u8]> + AsMut<[u8]>> {
@@ -163,7 +159,7 @@ pub use self::sha3::*;
 //     type HexOutput: HexDigest;
 
 //     fn kind(&self) -> CryptoHashKind;
-    
+
 //     fn block_len(&self) -> usize;
 
 //     fn output_len(&self) -> usize;
@@ -176,7 +172,6 @@ pub use self::sha3::*;
 
 //     fn oneshot<T: AsRef<[u8]>>(data: T) -> Self::Output;
 // }
-
 
 // pub trait BuildCryptoHasher {
 //     type Hasher: CryptoHasher;
@@ -193,7 +188,7 @@ pub use self::sha3::*;
 
 //             type Output    = [u8; Self::DIGEST_LEN];
 //             type HexOutput = HexStr<[u8; Self::DIGEST_LEN * 2 + 2]>;
-            
+
 //             fn kind(&self) -> CryptoHashKind {
 //                 CryptoHashKind::$kind
 //             }
@@ -201,36 +196,36 @@ pub use self::sha3::*;
 //             fn block_len(&self) -> usize {
 //                 $name::BLOCK_LEN
 //             }
-            
+
 //             fn output_len(&self) -> usize {
 //                 $name::DIGEST_LEN
 //             }
-            
+
 //             fn write<T: AsRef<[u8]>>(&mut self, bytes: T) {
 //                 self.update(bytes.as_ref());
 //             }
-            
+
 //             fn digest(self) -> Self::Output {
 //                 self.finalize()
 //             }
-            
+
 //             fn hexdigest(self) -> Self::HexOutput {
 //                 let digest = self.digest();
-                
+
 //                 let mut hex_bytes = [0u8; Self::DIGEST_LEN * 2 + 2];
 //                 hex_bytes[0] = b'0';
 //                 hex_bytes[1] = b'x';
-                
+
 //                 for i in 0..Self::DIGEST_LEN {
 //                     let (hi, lo) = byte2hex(digest[i], &HEX_CHARS_LOWER);
 //                     let offset = i * 2 + 2;
 //                     hex_bytes[offset] = hi;
 //                     hex_bytes[offset + 1] = lo;
 //                 }
-                
+
 //                 HexStr { inner: hex_bytes }
 //             }
-            
+
 //             fn oneshot<T: AsRef<[u8]>>(data: T) -> Self::Output {
 //                 Self::oneshot(data)
 //             }
@@ -276,8 +271,6 @@ pub use self::sha3::*;
 
 // // SHA-3
 
-
-
 #[test]
 fn test_hasher_oneshot() {
     macro_rules! test_oneshot {
@@ -295,7 +288,7 @@ fn test_hasher_oneshot() {
             }
         }
     }
-    
+
     test_oneshot!(Md2);
     test_oneshot!(Md4);
     test_oneshot!(Md5);
@@ -303,7 +296,7 @@ fn test_hasher_oneshot() {
 
     // SHA-1
     test_oneshot!(Sha1);
-    
+
     // SHA-2
     test_oneshot!(Sha224);
     test_oneshot!(Sha256);
@@ -313,15 +306,12 @@ fn test_hasher_oneshot() {
     // SHA-3
 }
 
-
 #[cfg(test)]
 #[bench]
 fn bench_md2(b: &mut test::Bencher) {
     let data = [1u8; 64];
     b.bytes = data.len() as u64;
-    b.iter(|| {
-        md2(&data)
-    });
+    b.iter(|| md2(&data));
 }
 
 #[cfg(test)]
@@ -329,9 +319,7 @@ fn bench_md2(b: &mut test::Bencher) {
 fn bench_md4(b: &mut test::Bencher) {
     let data = [1u8; 64];
     b.bytes = data.len() as u64;
-    b.iter(|| {
-        md4(&data)
-    });
+    b.iter(|| md4(&data));
 }
 
 #[cfg(test)]
@@ -339,9 +327,7 @@ fn bench_md4(b: &mut test::Bencher) {
 fn bench_md5(b: &mut test::Bencher) {
     let data = [1u8; 64];
     b.bytes = data.len() as u64;
-    b.iter(|| {
-        md5(&data)
-    });
+    b.iter(|| md5(&data));
 }
 
 #[cfg(test)]
@@ -349,9 +335,7 @@ fn bench_md5(b: &mut test::Bencher) {
 fn bench_sm3(b: &mut test::Bencher) {
     let data = [1u8; 64];
     b.bytes = data.len() as u64;
-    b.iter(|| {
-        sm3(&data)
-    });
+    b.iter(|| sm3(&data));
 }
 
 #[cfg(test)]
@@ -359,9 +343,7 @@ fn bench_sm3(b: &mut test::Bencher) {
 fn bench_sha1(b: &mut test::Bencher) {
     let data = [1u8; 64];
     b.bytes = data.len() as u64;
-    b.iter(|| {
-        sha1(&data)
-    });
+    b.iter(|| sha1(&data));
 }
 
 #[cfg(test)]
@@ -371,9 +353,7 @@ fn bench_sha256(b: &mut test::Bencher) {
 
     let data = [1u8; 64];
     b.bytes = data.len() as u64;
-    b.iter(|| {
-        sha256(&data)
-    });
+    b.iter(|| sha256(&data));
 }
 #[cfg(test)]
 #[bench]
@@ -382,16 +362,12 @@ fn bench_sha384(b: &mut test::Bencher) {
 
     let data = [1u8; 64];
     b.bytes = data.len() as u64;
-    b.iter(|| {
-        sha384(&data)
-    });
+    b.iter(|| sha384(&data));
 }
 #[cfg(test)]
 #[bench]
 fn bench_sha512(b: &mut test::Bencher) {
     let data = [1u8; 64];
     b.bytes = data.len() as u64;
-    b.iter(|| {
-        sha512(&data)
-    });
+    b.iter(|| sha512(&data));
 }

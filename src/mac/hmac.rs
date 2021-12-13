@@ -1,11 +1,9 @@
 // HMAC: Keyed-Hashing for Message Authentication
 // https://tools.ietf.org/html/rfc2104
-use crate::hash::{ Md2, Md4, Md5, Sm3, Sha1, Sha224, Sha256, Sha384, Sha512, };
-
+use crate::hash::{Md2, Md4, Md5, Sha1, Sha224, Sha256, Sha384, Sha512, Sm3};
 
 const IPAD: u8 = 0x36;
 const OPAD: u8 = 0x5C;
-
 
 macro_rules! impl_hmac_with_hasher {
     ($name:tt, $hasher:tt) => {
@@ -17,8 +15,7 @@ macro_rules! impl_hmac_with_hasher {
 
         impl $name {
             pub const BLOCK_LEN: usize = $hasher::BLOCK_LEN;
-            pub const TAG_LEN: usize   = $hasher::DIGEST_LEN;
-
+            pub const TAG_LEN: usize = $hasher::DIGEST_LEN;
 
             pub fn new(key: &[u8]) -> Self {
                 // H(K XOR opad, H(K XOR ipad, text))
@@ -27,7 +24,7 @@ macro_rules! impl_hmac_with_hasher {
 
                 if key.len() > Self::BLOCK_LEN {
                     let hkey = $hasher::oneshot(key);
-                    
+
                     ikey[..Self::TAG_LEN].copy_from_slice(&hkey[..Self::TAG_LEN]);
                     okey[..Self::TAG_LEN].copy_from_slice(&hkey[..Self::TAG_LEN]);
                 } else {
@@ -68,9 +65,8 @@ macro_rules! impl_hmac_with_hasher {
                 mac.finalize()
             }
         }
-    }
+    };
 }
-
 
 impl_hmac_with_hasher!(HmacMd2, Md2);
 impl_hmac_with_hasher!(HmacMd4, Md4);
@@ -86,7 +82,6 @@ impl_hmac_with_hasher!(HmacSha384, Sha384);
 impl_hmac_with_hasher!(HmacSha512, Sha512);
 
 // SHA-3
-
 
 pub fn hmac_md2(key: &[u8], m: &[u8]) -> [u8; HmacMd2::TAG_LEN] {
     HmacMd2::oneshot(key, m)
@@ -128,14 +123,22 @@ pub fn hmac_sha512(key: &[u8], m: &[u8]) -> [u8; HmacSha512::TAG_LEN] {
 fn test_hmac_md5() {
     // [Page 8] Test Vectors
     // https://tools.ietf.org/html/rfc2104#section-6
-    let b16  = [0x0b; 16]; // 0x0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b
+    let b16 = [0x0b; 16]; // 0x0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b
     let aa16 = [0xaa; 16]; // 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
     let dd50 = [0xdd; 50];
-    
+
     let suites: &[(&[u8], &[u8], &str)] = &[
-        (b"key", b"The quick brown fox jumps over the lazy dog", "80070713463e7749b90c2dc24911e275"),
+        (
+            b"key",
+            b"The quick brown fox jumps over the lazy dog",
+            "80070713463e7749b90c2dc24911e275",
+        ),
         (&b16, b"Hi There", "9294727a3638bb1c13f48ef8158bfc9d"),
-        (b"Jefe", b"what do ya want for nothing?", "750c783e6ab0b503eaa86e310a5db738"),
+        (
+            b"Jefe",
+            b"what do ya want for nothing?",
+            "750c783e6ab0b503eaa86e310a5db738",
+        ),
         (&aa16, &dd50, "56be34521d144c88dbb8c733f0e8b3f6"),
     ];
     for (key, data, result) in suites.iter() {
@@ -147,7 +150,7 @@ fn test_hmac_sha1() {
     let key = b"key";
     let data = b"The quick brown fox jumps over the lazy dog";
     let result = "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9";
-    
+
     assert_eq!(&hex::encode(&HmacSha1::oneshot(key, data)), result);
 }
 

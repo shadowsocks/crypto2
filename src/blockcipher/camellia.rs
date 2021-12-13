@@ -1,21 +1,21 @@
 // A Description of the Camellia Encryption Algorithm
 // https://tools.ietf.org/html/rfc3713
-// 
+//
 // Announcement of Royalty-free Licenses for Essential Patents of NTT Encryption and Digital Signature Algorithms
 // https://www.ntt.co.jp/news/news01e/0104/010417.html
-// 
+//
 // Camellia home page
 // http://info.isl.ntt.co.jp/camellia/
 // https://info.isl.ntt.co.jp/crypt/eng/camellia/
-// 
+//
 // The Camellia was adopted in MIT Kerberos 5 Release 1.9. Please see the Source Codes page.
 // https://info.isl.ntt.co.jp/crypt/eng/camellia/source/
-// 
+//
 // camellia-rb-1.2.tar.gz (Version 1.2, 36 KB)
 // https://info.isl.ntt.co.jp/crypt/eng/camellia/dl/camellia-rb-1.2.tar.gz
-// 
+//
 // https://info.isl.ntt.co.jp/crypt/eng/camellia/specifications/
-// 
+//
 // Speci cationofCamellia|a128-bitBlockCipher
 // https://info.isl.ntt.co.jp/crypt/eng/camellia/dl/01espec.pdf
 const BLOCK_LEN: usize = 16;
@@ -26,7 +26,6 @@ const CAMELLIA_TABLE_WORD_LEN: usize = CAMELLIA_TABLE_BYTE_LEN / 4; // 68
 const KEY_TABLE_LEN: usize = CAMELLIA_TABLE_WORD_LEN;
 type KeyTable = [u32; KEY_TABLE_LEN];
 
-
 macro_rules! impl_camellia {
     ($name:tt, $key_len:tt, $key_set_up_fn:tt, $enc_fn:tt, $dec_fn:tt) => {
         #[derive(Clone)]
@@ -35,7 +34,7 @@ macro_rules! impl_camellia {
         }
 
         impl $name {
-            pub const KEY_LEN: usize   = $key_len;
+            pub const KEY_LEN: usize = $key_len;
             pub const BLOCK_LEN: usize = BLOCK_LEN;
 
             pub fn new(key: &[u8]) -> Self {
@@ -55,13 +54,30 @@ macro_rules! impl_camellia {
                 $dec_fn(&self.subkey, block)
             }
         }
-    }
+    };
 }
 
-impl_camellia!(Camellia128, 16, camellia_setup128, camellia_encrypt128, camellia_decrypt128);
-impl_camellia!(Camellia192, 24, camellia_setup192, camellia_encrypt256, camellia_decrypt256);
-impl_camellia!(Camellia256, 32, camellia_setup256, camellia_encrypt256, camellia_decrypt256);
-
+impl_camellia!(
+    Camellia128,
+    16,
+    camellia_setup128,
+    camellia_encrypt128,
+    camellia_decrypt128
+);
+impl_camellia!(
+    Camellia192,
+    24,
+    camellia_setup192,
+    camellia_encrypt256,
+    camellia_decrypt256
+);
+impl_camellia!(
+    Camellia256,
+    32,
+    camellia_setup256,
+    camellia_encrypt256,
+    camellia_decrypt256
+);
 
 impl core::fmt::Debug for Camellia128 {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -235,26 +251,24 @@ const CAMELLIA_SIGMA5R: u32 = 0xDE682D1D;
 const CAMELLIA_SIGMA6L: u32 = 0xB05688C2;
 const CAMELLIA_SIGMA6R: u32 = 0xB3E6C1FD;
 
-
 // rotation right shift 1byte
 macro_rules! camellia_rr8 {
-    ($v:ident) => (
+    ($v:ident) => {
         $v.rotate_right(8)
-    )
+    };
 }
 // rotation left shift 1bit
 macro_rules! camellia_rl1 {
-    ($v:expr) => (
+    ($v:expr) => {
         $v.rotate_left(1)
-    )
+    };
 }
 // rotation left shift 1byte
 macro_rules! camellia_rl8 {
-    ($v:ident) => (
+    ($v:ident) => {
         $v.rotate_left(8)
-    )
+    };
 }
-
 
 macro_rules! camellia_roldq {
     ($ll:ident, $lr:ident, $rl:ident, $rr:ident, $w0:ident, $w1:ident, $bits:tt) => {
@@ -263,7 +277,7 @@ macro_rules! camellia_roldq {
         $lr = ($lr << $bits) + ($rl >> (32 - $bits));
         $rl = ($rl << $bits) + ($rr >> (32 - $bits));
         $rr = ($rr << $bits) + ($w0 >> (32 - $bits));
-    }
+    };
 }
 macro_rules! camellia_roldqo32 {
     ($ll:ident, $lr:ident, $rl:ident, $rr:ident, $w0:ident, $w1:ident, $bits:tt) => {
@@ -273,7 +287,7 @@ macro_rules! camellia_roldqo32 {
         $lr = ($rl << ($bits - 32)) + ($rr >> (64 - $bits));
         $rl = ($rr << ($bits - 32)) + ($w0 >> (64 - $bits));
         $rr = ($w0 << ($bits - 32)) + ($w1 >> (64 - $bits));
-    }
+    };
 }
 
 macro_rules! camellia_f {
@@ -294,26 +308,26 @@ macro_rules! camellia_f {
         $yl ^= $yr;
         $yr = camellia_rr8!($yr);
         $yr ^= $yl;
-    }
+    };
 }
 
 // for speed up
 macro_rules! camellia_fls {
     ($ll:expr, $lr:expr, $rl:expr, $rr:expr, $kll:expr, $klr:expr, $krl:expr, $krr:expr, $t0:expr, $t1:expr, $t2:expr, $t3:expr) => {
-        $t0  = $kll;
+        $t0 = $kll;
         $t0 &= $ll;
         $lr ^= camellia_rl1!($t0);
-        $t1  = $klr;
+        $t1 = $klr;
         $t1 |= $lr;
         $ll ^= $t1;
 
-        $t2  = $krr;
+        $t2 = $krr;
         $t2 |= $rr;
         $rl ^= $t2;
-        $t3  = $krl;
+        $t3 = $krl;
         $t3 &= $rl;
         $rr ^= camellia_rl1!($t3);
-    }
+    };
 }
 
 macro_rules! camellia_roundsm {
@@ -321,11 +335,11 @@ macro_rules! camellia_roundsm {
         $ir = CAMELLIA_SP1110[($xr & 0xff) as usize]
             ^ CAMELLIA_SP0222[(($xr >> 24) & 0xff) as usize]
             ^ CAMELLIA_SP3033[(($xr >> 16) & 0xff) as usize]
-            ^ CAMELLIA_SP4404[(($xr >>  8) & 0xff) as usize];
+            ^ CAMELLIA_SP4404[(($xr >> 8) & 0xff) as usize];
 
         $il = CAMELLIA_SP1110[(($xl >> 24) & 0xff) as usize]
             ^ CAMELLIA_SP0222[(($xl >> 16) & 0xff) as usize]
-            ^ CAMELLIA_SP3033[(($xl >>  8) & 0xff) as usize]
+            ^ CAMELLIA_SP3033[(($xl >> 8) & 0xff) as usize]
             ^ CAMELLIA_SP4404[($xl & 0xff) as usize];
         $il ^= $kl;
         $ir ^= $kr;
@@ -334,14 +348,18 @@ macro_rules! camellia_roundsm {
         $il ^= $ir;
         $yl ^= $ir;
         $yr ^= $il;
-    }
+    };
 }
 
 macro_rules! camellia_subkey_l {
-    ($subkey:ident, $index:tt) => ( $subkey[$index * 2])
+    ($subkey:ident, $index:tt) => {
+        $subkey[$index * 2]
+    };
 }
 macro_rules! camellia_subkey_r {
-    ($subkey:ident, $index:tt) => ( $subkey[$index * 2 + 1])
+    ($subkey:ident, $index:tt) => {
+        $subkey[$index * 2 + 1]
+    };
 }
 
 fn camellia_setup128(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
@@ -361,112 +379,204 @@ fn camellia_setup128(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
 
     let mut kw4l = 0u32;
     let mut kw4r = 0u32;
-    let mut dw   = 0u32;
-    let mut tl   = 0u32;
-    let mut tr   = 0u32;
+    let mut dw = 0u32;
+    let mut tl = 0u32;
+    let mut tr = 0u32;
 
     let mut subl = [0u32; 26];
     let mut subr = [0u32; 26];
 
     // k == kll || klr || krl || krr (|| is concatination)
-    kll = u32::from_be_bytes([key[ 0], key[ 1], key[ 2], key[ 3]]);
-    klr = u32::from_be_bytes([key[ 4], key[ 5], key[ 6], key[ 7]]);
-    krl = u32::from_be_bytes([key[ 8], key[ 9], key[10], key[11]]);
+    kll = u32::from_be_bytes([key[0], key[1], key[2], key[3]]);
+    klr = u32::from_be_bytes([key[4], key[5], key[6], key[7]]);
+    krl = u32::from_be_bytes([key[8], key[9], key[10], key[11]]);
     krr = u32::from_be_bytes([key[12], key[13], key[14], key[15]]);
 
     // generate KL dependent subkeys
-    subl[0] = kll; subr[0] = klr;
-    subl[1] = krl; subr[1] = krr;
+    subl[0] = kll;
+    subr[0] = klr;
+    subl[1] = krl;
+    subr[1] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 15);
-    subl[4] = kll; subr[4] = klr;
-    subl[5] = krl; subr[5] = krr;
+    subl[4] = kll;
+    subr[4] = klr;
+    subl[5] = krl;
+    subr[5] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 30);
-    subl[10] = kll; subr[10] = klr;
-    subl[11] = krl; subr[11] = krr;
+    subl[10] = kll;
+    subr[10] = klr;
+    subl[11] = krl;
+    subr[11] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 15);
-    subl[13] = krl; subr[13] = krr;
+    subl[13] = krl;
+    subr[13] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 17);
-    subl[16] = kll; subr[16] = klr;
-    subl[17] = krl; subr[17] = krr;
+    subl[16] = kll;
+    subr[16] = klr;
+    subl[17] = krl;
+    subr[17] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 17);
-    subl[18] = kll; subr[18] = klr;
-    subl[19] = krl; subr[19] = krr;
+    subl[18] = kll;
+    subr[18] = klr;
+    subl[19] = krl;
+    subr[19] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 17);
-    subl[22] = kll; subr[22] = klr;
-    subl[23] = krl; subr[23] = krr;
+    subl[22] = kll;
+    subr[22] = klr;
+    subl[23] = krl;
+    subr[23] = krr;
 
     // generate KA
-    kll = subl[0]; klr = subr[0];
-    krl = subl[1]; krr = subr[1];
-    camellia_f!(kll, klr,
-           CAMELLIA_SIGMA1L, CAMELLIA_SIGMA1R,
-           w0, w1, il, ir, t0, t1);
-    krl ^= w0; krr ^= w1;
-    camellia_f!(krl, krr,
-           CAMELLIA_SIGMA2L, CAMELLIA_SIGMA2R,
-           kll, klr, il, ir, t0, t1);
-    camellia_f!(kll, klr,
-           CAMELLIA_SIGMA3L, CAMELLIA_SIGMA3R,
-           krl, krr, il, ir, t0, t1);
-    krl ^= w0; krr ^= w1;
-    camellia_f!(krl, krr,
-           CAMELLIA_SIGMA4L, CAMELLIA_SIGMA4R,
-           w0, w1, il, ir, t0, t1);
-    kll ^= w0; klr ^= w1;
+    kll = subl[0];
+    klr = subr[0];
+    krl = subl[1];
+    krr = subr[1];
+    camellia_f!(
+        kll,
+        klr,
+        CAMELLIA_SIGMA1L,
+        CAMELLIA_SIGMA1R,
+        w0,
+        w1,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    krl ^= w0;
+    krr ^= w1;
+    camellia_f!(
+        krl,
+        krr,
+        CAMELLIA_SIGMA2L,
+        CAMELLIA_SIGMA2R,
+        kll,
+        klr,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_f!(
+        kll,
+        klr,
+        CAMELLIA_SIGMA3L,
+        CAMELLIA_SIGMA3R,
+        krl,
+        krr,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    krl ^= w0;
+    krr ^= w1;
+    camellia_f!(
+        krl,
+        krr,
+        CAMELLIA_SIGMA4L,
+        CAMELLIA_SIGMA4R,
+        w0,
+        w1,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    kll ^= w0;
+    klr ^= w1;
 
     // generate KA dependent subkeys
-    subl[2] = kll; subr[2] = klr;
-    subl[3] = krl; subr[3] = krr;
+    subl[2] = kll;
+    subr[2] = klr;
+    subl[3] = krl;
+    subr[3] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 15);
-    subl[6] = kll; subr[6] = klr;
-    subl[7] = krl; subr[7] = krr;
+    subl[6] = kll;
+    subr[6] = klr;
+    subl[7] = krl;
+    subr[7] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 15);
-    subl[8] = kll; subr[8] = klr;
-    subl[9] = krl; subr[9] = krr;
+    subl[8] = kll;
+    subr[8] = klr;
+    subl[9] = krl;
+    subr[9] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 15);
-    subl[12] = kll; subr[12] = klr;
+    subl[12] = kll;
+    subr[12] = klr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 15);
-    subl[14] = kll; subr[14] = klr;
-    subl[15] = krl; subr[15] = krr;
+    subl[14] = kll;
+    subr[14] = klr;
+    subl[15] = krl;
+    subr[15] = krr;
     camellia_roldqo32!(kll, klr, krl, krr, w0, w1, 34);
-    subl[20] = kll; subr[20] = klr;
-    subl[21] = krl; subr[21] = krr;
+    subl[20] = kll;
+    subr[20] = klr;
+    subl[21] = krl;
+    subr[21] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 17);
-    subl[24] = kll; subr[24] = klr;
-    subl[25] = krl; subr[25] = krr;
+    subl[24] = kll;
+    subr[24] = klr;
+    subl[25] = krl;
+    subr[25] = krr;
 
     // absorb kw2 to other subkeys
-    subl[3] ^= subl[1]; subr[3] ^= subr[1];
-    subl[5] ^= subl[1]; subr[5] ^= subr[1];
-    subl[7] ^= subl[1]; subr[7] ^= subr[1];
+    subl[3] ^= subl[1];
+    subr[3] ^= subr[1];
+    subl[5] ^= subl[1];
+    subr[5] ^= subr[1];
+    subl[7] ^= subl[1];
+    subr[7] ^= subr[1];
     subl[1] ^= subr[1] & !subr[9];
-    dw = subl[1] & subl[9]; subr[1] ^= camellia_rl1!(dw);
-    subl[11] ^= subl[1]; subr[11] ^= subr[1];
-    subl[13] ^= subl[1]; subr[13] ^= subr[1];
-    subl[15] ^= subl[1]; subr[15] ^= subr[1];
+    dw = subl[1] & subl[9];
+    subr[1] ^= camellia_rl1!(dw);
+    subl[11] ^= subl[1];
+    subr[11] ^= subr[1];
+    subl[13] ^= subl[1];
+    subr[13] ^= subr[1];
+    subl[15] ^= subl[1];
+    subr[15] ^= subr[1];
     subl[1] ^= subr[1] & !subr[17];
-    dw = subl[1] & subl[17]; subr[1] ^= camellia_rl1!(dw);
-    subl[19] ^= subl[1]; subr[19] ^= subr[1];
-    subl[21] ^= subl[1]; subr[21] ^= subr[1];
-    subl[23] ^= subl[1]; subr[23] ^= subr[1];
-    subl[24] ^= subl[1]; subr[24] ^= subr[1];
+    dw = subl[1] & subl[17];
+    subr[1] ^= camellia_rl1!(dw);
+    subl[19] ^= subl[1];
+    subr[19] ^= subr[1];
+    subl[21] ^= subl[1];
+    subr[21] ^= subr[1];
+    subl[23] ^= subl[1];
+    subr[23] ^= subr[1];
+    subl[24] ^= subl[1];
+    subr[24] ^= subr[1];
 
     // absorb kw4 to other subkeys
-    kw4l = subl[25]; kw4r = subr[25];
-    subl[22] ^= kw4l; subr[22] ^= kw4r;
-    subl[20] ^= kw4l; subr[20] ^= kw4r;
-    subl[18] ^= kw4l; subr[18] ^= kw4r;
+    kw4l = subl[25];
+    kw4r = subr[25];
+    subl[22] ^= kw4l;
+    subr[22] ^= kw4r;
+    subl[20] ^= kw4l;
+    subr[20] ^= kw4r;
+    subl[18] ^= kw4l;
+    subr[18] ^= kw4r;
     kw4l ^= kw4r & !subr[16];
-    dw = kw4l & subl[16]; kw4r ^= camellia_rl1!(dw);
-    subl[14] ^= kw4l; subr[14] ^= kw4r;
-    subl[12] ^= kw4l; subr[12] ^= kw4r;
-    subl[10] ^= kw4l; subr[10] ^= kw4r;
+    dw = kw4l & subl[16];
+    kw4r ^= camellia_rl1!(dw);
+    subl[14] ^= kw4l;
+    subr[14] ^= kw4r;
+    subl[12] ^= kw4l;
+    subr[12] ^= kw4r;
+    subl[10] ^= kw4l;
+    subr[10] ^= kw4r;
     kw4l ^= kw4r & !subr[8];
-    dw = kw4l & subl[8]; kw4r ^= camellia_rl1!(dw);
-    subl[6] ^= kw4l; subr[6] ^= kw4r;
-    subl[4] ^= kw4l; subr[4] ^= kw4r;
-    subl[2] ^= kw4l; subr[2] ^= kw4r;
-    subl[0] ^= kw4l; subr[0] ^= kw4r;
+    dw = kw4l & subl[8];
+    kw4r ^= camellia_rl1!(dw);
+    subl[6] ^= kw4l;
+    subr[6] ^= kw4r;
+    subl[4] ^= kw4l;
+    subr[4] ^= kw4r;
+    subl[2] ^= kw4l;
+    subr[2] ^= kw4r;
+    subl[0] ^= kw4l;
+    subr[0] ^= kw4r;
 
     // key XOR is end of F-function
     subkey[0 * 2] = subl[0] ^ subl[2];
@@ -482,7 +592,8 @@ fn camellia_setup128(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[6 * 2] = subl[5] ^ subl[7];
     subkey[6 * 2 + 1] = subr[5] ^ subr[7];
     tl = subl[10] ^ (subr[10] & !subr[8]);
-    dw = tl & subl[8]; tr = subr[10] ^ camellia_rl1!(dw);
+    dw = tl & subl[8];
+    tr = subr[10] ^ camellia_rl1!(dw);
     subkey[7 * 2] = subl[6] ^ tl;
     subkey[7 * 2 + 1] = subr[6] ^ tr;
     subkey[8 * 2] = subl[8];
@@ -490,7 +601,8 @@ fn camellia_setup128(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[9 * 2] = subl[9];
     subkey[9 * 2 + 1] = subr[9];
     tl = subl[7] ^ (subr[7] & !subr[9]);
-    dw = tl & subl[9]; tr = subr[7] ^ camellia_rl1!(dw);
+    dw = tl & subl[9];
+    tr = subr[7] ^ camellia_rl1!(dw);
     subkey[10 * 2] = tl ^ subl[11];
     subkey[10 * 2 + 1] = tr ^ subr[11];
     subkey[11 * 2] = subl[10] ^ subl[12];
@@ -502,7 +614,8 @@ fn camellia_setup128(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[14 * 2] = subl[13] ^ subl[15];
     subkey[14 * 2 + 1] = subr[13] ^ subr[15];
     tl = subl[18] ^ (subr[18] & !subr[16]);
-    dw = tl & subl[16]; tr = subr[18] ^ camellia_rl1!(dw);
+    dw = tl & subl[16];
+    tr = subr[18] ^ camellia_rl1!(dw);
     subkey[15 * 2] = subl[14] ^ tl;
     subkey[15 * 2 + 1] = subr[14] ^ tr;
     subkey[16 * 2] = subl[16];
@@ -510,7 +623,8 @@ fn camellia_setup128(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[17 * 2] = subl[17];
     subkey[17 * 2 + 1] = subr[17];
     tl = subl[15] ^ (subr[15] & !subr[17]);
-    dw = tl & subl[17]; tr = subr[15] ^ camellia_rl1!(dw);
+    dw = tl & subl[17];
+    tr = subr[15] ^ camellia_rl1!(dw);
     subkey[18 * 2] = tl ^ subl[19];
     subkey[18 * 2 + 1] = tr ^ subr[19];
     subkey[19 * 2] = subl[18] ^ subl[20];
@@ -527,44 +641,79 @@ fn camellia_setup128(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[24 * 2 + 1] = subr[24] ^ subr[23];
 
     // apply the inverse of the last half of P-function
-    dw = camellia_subkey_l!(subkey, 2) ^ camellia_subkey_r!(subkey, 2); dw = camellia_rl8!(dw);
-    subkey[2 * 2 + 1] = camellia_subkey_l!(subkey, 2) ^ dw; subkey[2 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 3) ^ camellia_subkey_r!(subkey, 3); dw = camellia_rl8!(dw);
-    subkey[3 * 2 + 1] = camellia_subkey_l!(subkey, 3) ^ dw; subkey[3 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 4) ^ camellia_subkey_r!(subkey, 4); dw = camellia_rl8!(dw);
-    subkey[4 * 2 + 1] = camellia_subkey_l!(subkey, 4) ^ dw; subkey[4 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 5) ^ camellia_subkey_r!(subkey, 5); dw = camellia_rl8!(dw);
-    subkey[5 * 2 + 1] = camellia_subkey_l!(subkey, 5) ^ dw; subkey[5 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 6) ^ camellia_subkey_r!(subkey, 6); dw = camellia_rl8!(dw);
-    subkey[6 * 2 + 1] = camellia_subkey_l!(subkey, 6) ^ dw; subkey[6 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 7) ^ camellia_subkey_r!(subkey, 7); dw = camellia_rl8!(dw);
-    subkey[7 * 2 + 1] = camellia_subkey_l!(subkey, 7) ^ dw; subkey[7 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 10) ^ camellia_subkey_r!(subkey, 10); dw = camellia_rl8!(dw);
-    subkey[10 * 2 + 1] = camellia_subkey_l!(subkey, 10) ^ dw; subkey[10 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 11) ^ camellia_subkey_r!(subkey, 11); dw = camellia_rl8!(dw);
-    subkey[11 * 2 + 1] = camellia_subkey_l!(subkey, 11) ^ dw; subkey[11 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 12) ^ camellia_subkey_r!(subkey, 12); dw = camellia_rl8!(dw);
-    subkey[12 * 2 + 1] = camellia_subkey_l!(subkey, 12) ^ dw; subkey[12 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 13) ^ camellia_subkey_r!(subkey, 13); dw = camellia_rl8!(dw);
-    subkey[13 * 2 + 1] = camellia_subkey_l!(subkey, 13) ^ dw; subkey[13 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 14) ^ camellia_subkey_r!(subkey, 14); dw = camellia_rl8!(dw);
-    subkey[14 * 2 + 1] = camellia_subkey_l!(subkey, 14) ^ dw; subkey[14 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 15) ^ camellia_subkey_r!(subkey, 15); dw = camellia_rl8!(dw);
-    subkey[15 * 2 + 1] = camellia_subkey_l!(subkey, 15) ^ dw; subkey[15 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 18) ^ camellia_subkey_r!(subkey, 18); dw = camellia_rl8!(dw);
-    subkey[18 * 2 + 1] = camellia_subkey_l!(subkey, 18) ^ dw; subkey[18 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 19) ^ camellia_subkey_r!(subkey, 19); dw = camellia_rl8!(dw);
-    subkey[19 * 2 + 1] = camellia_subkey_l!(subkey, 19) ^ dw; subkey[19 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 20) ^ camellia_subkey_r!(subkey, 20); dw = camellia_rl8!(dw);
-    subkey[20 * 2 + 1] = camellia_subkey_l!(subkey, 20) ^ dw; subkey[20 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 21) ^ camellia_subkey_r!(subkey, 21); dw = camellia_rl8!(dw);
-    subkey[21 * 2 + 1] = camellia_subkey_l!(subkey, 21) ^ dw; subkey[21 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 22) ^ camellia_subkey_r!(subkey, 22); dw = camellia_rl8!(dw);
-    subkey[22 * 2 + 1] = camellia_subkey_l!(subkey, 22) ^ dw; subkey[22 * 2] = dw;
-    dw = camellia_subkey_l!(subkey, 23) ^ camellia_subkey_r!(subkey, 23); dw = camellia_rl8!(dw);
-    subkey[23 * 2 + 1] = camellia_subkey_l!(subkey, 23) ^ dw; subkey[23 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 2) ^ camellia_subkey_r!(subkey, 2);
+    dw = camellia_rl8!(dw);
+    subkey[2 * 2 + 1] = camellia_subkey_l!(subkey, 2) ^ dw;
+    subkey[2 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 3) ^ camellia_subkey_r!(subkey, 3);
+    dw = camellia_rl8!(dw);
+    subkey[3 * 2 + 1] = camellia_subkey_l!(subkey, 3) ^ dw;
+    subkey[3 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 4) ^ camellia_subkey_r!(subkey, 4);
+    dw = camellia_rl8!(dw);
+    subkey[4 * 2 + 1] = camellia_subkey_l!(subkey, 4) ^ dw;
+    subkey[4 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 5) ^ camellia_subkey_r!(subkey, 5);
+    dw = camellia_rl8!(dw);
+    subkey[5 * 2 + 1] = camellia_subkey_l!(subkey, 5) ^ dw;
+    subkey[5 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 6) ^ camellia_subkey_r!(subkey, 6);
+    dw = camellia_rl8!(dw);
+    subkey[6 * 2 + 1] = camellia_subkey_l!(subkey, 6) ^ dw;
+    subkey[6 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 7) ^ camellia_subkey_r!(subkey, 7);
+    dw = camellia_rl8!(dw);
+    subkey[7 * 2 + 1] = camellia_subkey_l!(subkey, 7) ^ dw;
+    subkey[7 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 10) ^ camellia_subkey_r!(subkey, 10);
+    dw = camellia_rl8!(dw);
+    subkey[10 * 2 + 1] = camellia_subkey_l!(subkey, 10) ^ dw;
+    subkey[10 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 11) ^ camellia_subkey_r!(subkey, 11);
+    dw = camellia_rl8!(dw);
+    subkey[11 * 2 + 1] = camellia_subkey_l!(subkey, 11) ^ dw;
+    subkey[11 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 12) ^ camellia_subkey_r!(subkey, 12);
+    dw = camellia_rl8!(dw);
+    subkey[12 * 2 + 1] = camellia_subkey_l!(subkey, 12) ^ dw;
+    subkey[12 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 13) ^ camellia_subkey_r!(subkey, 13);
+    dw = camellia_rl8!(dw);
+    subkey[13 * 2 + 1] = camellia_subkey_l!(subkey, 13) ^ dw;
+    subkey[13 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 14) ^ camellia_subkey_r!(subkey, 14);
+    dw = camellia_rl8!(dw);
+    subkey[14 * 2 + 1] = camellia_subkey_l!(subkey, 14) ^ dw;
+    subkey[14 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 15) ^ camellia_subkey_r!(subkey, 15);
+    dw = camellia_rl8!(dw);
+    subkey[15 * 2 + 1] = camellia_subkey_l!(subkey, 15) ^ dw;
+    subkey[15 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 18) ^ camellia_subkey_r!(subkey, 18);
+    dw = camellia_rl8!(dw);
+    subkey[18 * 2 + 1] = camellia_subkey_l!(subkey, 18) ^ dw;
+    subkey[18 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 19) ^ camellia_subkey_r!(subkey, 19);
+    dw = camellia_rl8!(dw);
+    subkey[19 * 2 + 1] = camellia_subkey_l!(subkey, 19) ^ dw;
+    subkey[19 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 20) ^ camellia_subkey_r!(subkey, 20);
+    dw = camellia_rl8!(dw);
+    subkey[20 * 2 + 1] = camellia_subkey_l!(subkey, 20) ^ dw;
+    subkey[20 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 21) ^ camellia_subkey_r!(subkey, 21);
+    dw = camellia_rl8!(dw);
+    subkey[21 * 2 + 1] = camellia_subkey_l!(subkey, 21) ^ dw;
+    subkey[21 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 22) ^ camellia_subkey_r!(subkey, 22);
+    dw = camellia_rl8!(dw);
+    subkey[22 * 2 + 1] = camellia_subkey_l!(subkey, 22) ^ dw;
+    subkey[22 * 2] = dw;
+    dw = camellia_subkey_l!(subkey, 23) ^ camellia_subkey_r!(subkey, 23);
+    dw = camellia_rl8!(dw);
+    subkey[23 * 2 + 1] = camellia_subkey_l!(subkey, 23) ^ dw;
+    subkey[23 * 2] = dw;
 }
-
 
 fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     debug_assert_eq!(key.len(), 32);
@@ -590,18 +739,18 @@ fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
 
     let mut kw4l = 0u32;
     let mut kw4r = 0u32;
-    let mut dw   = 0u32;
-    let mut tl   = 0u32;
-    let mut tr   = 0u32;
+    let mut dw = 0u32;
+    let mut tl = 0u32;
+    let mut tr = 0u32;
 
     let mut subl = [0u32; 34];
     let mut subr = [0u32; 34];
 
     // key = (kll || klr || krl || krr || krll || krlr || krrl || krrr)
     // (|| is concatination)
-    kll = u32::from_be_bytes([key[ 0], key[ 1], key[ 2], key[ 3]]);
-    klr = u32::from_be_bytes([key[ 4], key[ 5], key[ 6], key[ 7]]);
-    krl = u32::from_be_bytes([key[ 8], key[ 9], key[10], key[11]]);
+    kll = u32::from_be_bytes([key[0], key[1], key[2], key[3]]);
+    klr = u32::from_be_bytes([key[4], key[5], key[6], key[7]]);
+    krl = u32::from_be_bytes([key[8], key[9], key[10], key[11]]);
     krr = u32::from_be_bytes([key[12], key[13], key[14], key[15]]);
 
     krll = u32::from_be_bytes([key[16], key[17], key[18], key[19]]);
@@ -610,136 +759,267 @@ fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     krrr = u32::from_be_bytes([key[28], key[29], key[30], key[31]]);
 
     // generate KL dependent subkeys
-    subl[0] = kll; subr[0] = klr;
-    subl[1] = krl; subr[1] = krr;
+    subl[0] = kll;
+    subr[0] = klr;
+    subl[1] = krl;
+    subr[1] = krr;
     camellia_roldqo32!(kll, klr, krl, krr, w0, w1, 45);
-    subl[12] = kll; subr[12] = klr;
-    subl[13] = krl; subr[13] = krr;
+    subl[12] = kll;
+    subr[12] = klr;
+    subl[13] = krl;
+    subr[13] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 15);
-    subl[16] = kll; subr[16] = klr;
-    subl[17] = krl; subr[17] = krr;
+    subl[16] = kll;
+    subr[16] = klr;
+    subl[17] = krl;
+    subr[17] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 17);
-    subl[22] = kll; subr[22] = klr;
-    subl[23] = krl; subr[23] = krr;
+    subl[22] = kll;
+    subr[22] = klr;
+    subl[23] = krl;
+    subr[23] = krr;
     camellia_roldqo32!(kll, klr, krl, krr, w0, w1, 34);
-    subl[30] = kll; subr[30] = klr;
-    subl[31] = krl; subr[31] = krr;
+    subl[30] = kll;
+    subr[30] = klr;
+    subl[31] = krl;
+    subr[31] = krr;
 
     // generate KR dependent subkeys
     camellia_roldq!(krll, krlr, krrl, krrr, w0, w1, 15);
-    subl[4] = krll; subr[4] = krlr;
-    subl[5] = krrl; subr[5] = krrr;
+    subl[4] = krll;
+    subr[4] = krlr;
+    subl[5] = krrl;
+    subr[5] = krrr;
     camellia_roldq!(krll, krlr, krrl, krrr, w0, w1, 15);
-    subl[8] = krll; subr[8] = krlr;
-    subl[9] = krrl; subr[9] = krrr;
+    subl[8] = krll;
+    subr[8] = krlr;
+    subl[9] = krrl;
+    subr[9] = krrr;
     camellia_roldq!(krll, krlr, krrl, krrr, w0, w1, 30);
-    subl[18] = krll; subr[18] = krlr;
-    subl[19] = krrl; subr[19] = krrr;
+    subl[18] = krll;
+    subr[18] = krlr;
+    subl[19] = krrl;
+    subr[19] = krrr;
     camellia_roldqo32!(krll, krlr, krrl, krrr, w0, w1, 34);
-    subl[26] = krll; subr[26] = krlr;
-    subl[27] = krrl; subr[27] = krrr;
+    subl[26] = krll;
+    subr[26] = krlr;
+    subl[27] = krrl;
+    subr[27] = krrr;
     camellia_roldqo32!(krll, krlr, krrl, krrr, w0, w1, 34);
 
-    // generate KA 
-    kll = subl[0] ^ krll; klr = subr[0] ^ krlr;
-    krl = subl[1] ^ krrl; krr = subr[1] ^ krrr;
-    camellia_f!(kll, klr,
-           CAMELLIA_SIGMA1L, CAMELLIA_SIGMA1R,
-           w0, w1, il, ir, t0, t1);
-    krl ^= w0; krr ^= w1;
-    camellia_f!(krl, krr,
-           CAMELLIA_SIGMA2L, CAMELLIA_SIGMA2R,
-           kll, klr, il, ir, t0, t1);
-    kll ^= krll; klr ^= krlr;
-    camellia_f!(kll, klr,
-           CAMELLIA_SIGMA3L, CAMELLIA_SIGMA3R,
-           krl, krr, il, ir, t0, t1);
-    krl ^= w0 ^ krrl; krr ^= w1 ^ krrr;
-    camellia_f!(krl, krr,
-           CAMELLIA_SIGMA4L, CAMELLIA_SIGMA4R,
-           w0, w1, il, ir, t0, t1);
-    kll ^= w0; klr ^= w1;
+    // generate KA
+    kll = subl[0] ^ krll;
+    klr = subr[0] ^ krlr;
+    krl = subl[1] ^ krrl;
+    krr = subr[1] ^ krrr;
+    camellia_f!(
+        kll,
+        klr,
+        CAMELLIA_SIGMA1L,
+        CAMELLIA_SIGMA1R,
+        w0,
+        w1,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    krl ^= w0;
+    krr ^= w1;
+    camellia_f!(
+        krl,
+        krr,
+        CAMELLIA_SIGMA2L,
+        CAMELLIA_SIGMA2R,
+        kll,
+        klr,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    kll ^= krll;
+    klr ^= krlr;
+    camellia_f!(
+        kll,
+        klr,
+        CAMELLIA_SIGMA3L,
+        CAMELLIA_SIGMA3R,
+        krl,
+        krr,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    krl ^= w0 ^ krrl;
+    krr ^= w1 ^ krrr;
+    camellia_f!(
+        krl,
+        krr,
+        CAMELLIA_SIGMA4L,
+        CAMELLIA_SIGMA4R,
+        w0,
+        w1,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    kll ^= w0;
+    klr ^= w1;
 
     // generate KB
-    krll ^= kll; krlr ^= klr;
-    krrl ^= krl; krrr ^= krr;
-    camellia_f!(krll, krlr,
-           CAMELLIA_SIGMA5L, CAMELLIA_SIGMA5R,
-           w0, w1, il, ir, t0, t1);
-    krrl ^= w0; krrr ^= w1;
-    camellia_f!(krrl, krrr,
-           CAMELLIA_SIGMA6L, CAMELLIA_SIGMA6R,
-           w0, w1, il, ir, t0, t1);
-    krll ^= w0; krlr ^= w1;
+    krll ^= kll;
+    krlr ^= klr;
+    krrl ^= krl;
+    krrr ^= krr;
+    camellia_f!(
+        krll,
+        krlr,
+        CAMELLIA_SIGMA5L,
+        CAMELLIA_SIGMA5R,
+        w0,
+        w1,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    krrl ^= w0;
+    krrr ^= w1;
+    camellia_f!(
+        krrl,
+        krrr,
+        CAMELLIA_SIGMA6L,
+        CAMELLIA_SIGMA6R,
+        w0,
+        w1,
+        il,
+        ir,
+        t0,
+        t1
+    );
+    krll ^= w0;
+    krlr ^= w1;
 
     // generate KA dependent subkeys
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 15);
-    subl[6] = kll; subr[6] = klr;
-    subl[7] = krl; subr[7] = krr;
+    subl[6] = kll;
+    subr[6] = klr;
+    subl[7] = krl;
+    subr[7] = krr;
     camellia_roldq!(kll, klr, krl, krr, w0, w1, 30);
-    subl[14] = kll; subr[14] = klr;
-    subl[15] = krl; subr[15] = krr;
-    subl[24] = klr; subr[24] = krl;
-    subl[25] = krr; subr[25] = kll;
+    subl[14] = kll;
+    subr[14] = klr;
+    subl[15] = krl;
+    subr[15] = krr;
+    subl[24] = klr;
+    subr[24] = krl;
+    subl[25] = krr;
+    subr[25] = kll;
     camellia_roldqo32!(kll, klr, krl, krr, w0, w1, 49);
-    subl[28] = kll; subr[28] = klr;
-    subl[29] = krl; subr[29] = krr;
+    subl[28] = kll;
+    subr[28] = klr;
+    subl[29] = krl;
+    subr[29] = krr;
 
     // generate KB dependent subkeys
-    subl[2] = krll; subr[2] = krlr;
-    subl[3] = krrl; subr[3] = krrr;
+    subl[2] = krll;
+    subr[2] = krlr;
+    subl[3] = krrl;
+    subr[3] = krrr;
     camellia_roldq!(krll, krlr, krrl, krrr, w0, w1, 30);
-    subl[10] = krll; subr[10] = krlr;
-    subl[11] = krrl; subr[11] = krrr;
+    subl[10] = krll;
+    subr[10] = krlr;
+    subl[11] = krrl;
+    subr[11] = krrr;
     camellia_roldq!(krll, krlr, krrl, krrr, w0, w1, 30);
-    subl[20] = krll; subr[20] = krlr;
-    subl[21] = krrl; subr[21] = krrr;
+    subl[20] = krll;
+    subr[20] = krlr;
+    subl[21] = krrl;
+    subr[21] = krrr;
     camellia_roldqo32!(krll, krlr, krrl, krrr, w0, w1, 51);
-    subl[32] = krll; subr[32] = krlr;
-    subl[33] = krrl; subr[33] = krrr;
+    subl[32] = krll;
+    subr[32] = krlr;
+    subl[33] = krrl;
+    subr[33] = krrr;
 
     // absorb kw2 to other subkeys
-    subl[3] ^= subl[1]; subr[3] ^= subr[1];
-    subl[5] ^= subl[1]; subr[5] ^= subr[1];
-    subl[7] ^= subl[1]; subr[7] ^= subr[1];
+    subl[3] ^= subl[1];
+    subr[3] ^= subr[1];
+    subl[5] ^= subl[1];
+    subr[5] ^= subr[1];
+    subl[7] ^= subl[1];
+    subr[7] ^= subr[1];
     subl[1] ^= subr[1] & !subr[9];
-    dw = subl[1] & subl[9]; subr[1] ^= camellia_rl1!(dw);
-    subl[11] ^= subl[1]; subr[11] ^= subr[1];
-    subl[13] ^= subl[1]; subr[13] ^= subr[1];
-    subl[15] ^= subl[1]; subr[15] ^= subr[1];
+    dw = subl[1] & subl[9];
+    subr[1] ^= camellia_rl1!(dw);
+    subl[11] ^= subl[1];
+    subr[11] ^= subr[1];
+    subl[13] ^= subl[1];
+    subr[13] ^= subr[1];
+    subl[15] ^= subl[1];
+    subr[15] ^= subr[1];
     subl[1] ^= subr[1] & !subr[17];
-    dw = subl[1] & subl[17]; subr[1] ^= camellia_rl1!(dw);
-    subl[19] ^= subl[1]; subr[19] ^= subr[1];
-    subl[21] ^= subl[1]; subr[21] ^= subr[1];
-    subl[23] ^= subl[1]; subr[23] ^= subr[1];
+    dw = subl[1] & subl[17];
+    subr[1] ^= camellia_rl1!(dw);
+    subl[19] ^= subl[1];
+    subr[19] ^= subr[1];
+    subl[21] ^= subl[1];
+    subr[21] ^= subr[1];
+    subl[23] ^= subl[1];
+    subr[23] ^= subr[1];
     subl[1] ^= subr[1] & !subr[25];
-    dw = subl[1] & subl[25]; subr[1] ^= camellia_rl1!(dw);
-    subl[27] ^= subl[1]; subr[27] ^= subr[1];
-    subl[29] ^= subl[1]; subr[29] ^= subr[1];
-    subl[31] ^= subl[1]; subr[31] ^= subr[1];
-    subl[32] ^= subl[1]; subr[32] ^= subr[1];
+    dw = subl[1] & subl[25];
+    subr[1] ^= camellia_rl1!(dw);
+    subl[27] ^= subl[1];
+    subr[27] ^= subr[1];
+    subl[29] ^= subl[1];
+    subr[29] ^= subr[1];
+    subl[31] ^= subl[1];
+    subr[31] ^= subr[1];
+    subl[32] ^= subl[1];
+    subr[32] ^= subr[1];
 
     // absorb kw4 to other subkeys
-    kw4l = subl[33]; kw4r = subr[33];
-    subl[30] ^= kw4l; subr[30] ^= kw4r;
-    subl[28] ^= kw4l; subr[28] ^= kw4r;
-    subl[26] ^= kw4l; subr[26] ^= kw4r;
+    kw4l = subl[33];
+    kw4r = subr[33];
+    subl[30] ^= kw4l;
+    subr[30] ^= kw4r;
+    subl[28] ^= kw4l;
+    subr[28] ^= kw4r;
+    subl[26] ^= kw4l;
+    subr[26] ^= kw4r;
     kw4l ^= kw4r & !subr[24];
-    dw = kw4l & subl[24]; kw4r ^= camellia_rl1!(dw);
-    subl[22] ^= kw4l; subr[22] ^= kw4r;
-    subl[20] ^= kw4l; subr[20] ^= kw4r;
-    subl[18] ^= kw4l; subr[18] ^= kw4r;
+    dw = kw4l & subl[24];
+    kw4r ^= camellia_rl1!(dw);
+    subl[22] ^= kw4l;
+    subr[22] ^= kw4r;
+    subl[20] ^= kw4l;
+    subr[20] ^= kw4r;
+    subl[18] ^= kw4l;
+    subr[18] ^= kw4r;
     kw4l ^= kw4r & !subr[16];
-    dw = kw4l & subl[16]; kw4r ^= camellia_rl1!(dw);
-    subl[14] ^= kw4l; subr[14] ^= kw4r;
-    subl[12] ^= kw4l; subr[12] ^= kw4r;
-    subl[10] ^= kw4l; subr[10] ^= kw4r;
+    dw = kw4l & subl[16];
+    kw4r ^= camellia_rl1!(dw);
+    subl[14] ^= kw4l;
+    subr[14] ^= kw4r;
+    subl[12] ^= kw4l;
+    subr[12] ^= kw4r;
+    subl[10] ^= kw4l;
+    subr[10] ^= kw4r;
     kw4l ^= kw4r & !subr[8];
-    dw = kw4l & subl[8]; kw4r ^= camellia_rl1!(dw);
-    subl[6] ^= kw4l; subr[6] ^= kw4r;
-    subl[4] ^= kw4l; subr[4] ^= kw4r;
-    subl[2] ^= kw4l; subr[2] ^= kw4r;
-    subl[0] ^= kw4l; subr[0] ^= kw4r;
+    dw = kw4l & subl[8];
+    kw4r ^= camellia_rl1!(dw);
+    subl[6] ^= kw4l;
+    subr[6] ^= kw4r;
+    subl[4] ^= kw4l;
+    subr[4] ^= kw4r;
+    subl[2] ^= kw4l;
+    subr[2] ^= kw4r;
+    subl[0] ^= kw4l;
+    subr[0] ^= kw4r;
 
     // key XOR is end of F-function
     subkey[0 * 2] = subl[0] ^ subl[2];
@@ -755,7 +1035,8 @@ fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[6 * 2] = subl[5] ^ subl[7];
     subkey[6 * 2 + 1] = subr[5] ^ subr[7];
     tl = subl[10] ^ (subr[10] & !subr[8]);
-    dw = tl & subl[8]; tr = subr[10] ^ camellia_rl1!(dw);
+    dw = tl & subl[8];
+    tr = subr[10] ^ camellia_rl1!(dw);
     subkey[7 * 2] = subl[6] ^ tl;
     subkey[7 * 2 + 1] = subr[6] ^ tr;
     subkey[8 * 2] = subl[8];
@@ -763,7 +1044,8 @@ fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[9 * 2] = subl[9];
     subkey[9 * 2 + 1] = subr[9];
     tl = subl[7] ^ (subr[7] & !subr[9]);
-    dw = tl & subl[9]; tr = subr[7] ^ camellia_rl1!(dw);
+    dw = tl & subl[9];
+    tr = subr[7] ^ camellia_rl1!(dw);
     subkey[10 * 2] = tl ^ subl[11];
     subkey[10 * 2 + 1] = tr ^ subr[11];
     subkey[11 * 2] = subl[10] ^ subl[12];
@@ -775,7 +1057,8 @@ fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[14 * 2] = subl[13] ^ subl[15];
     subkey[14 * 2 + 1] = subr[13] ^ subr[15];
     tl = subl[18] ^ (subr[18] & !subr[16]);
-    dw = tl & subl[16]; tr = subr[18] ^ camellia_rl1!(dw);
+    dw = tl & subl[16];
+    tr = subr[18] ^ camellia_rl1!(dw);
     subkey[15 * 2] = subl[14] ^ tl;
     subkey[15 * 2 + 1] = subr[14] ^ tr;
     subkey[16 * 2] = subl[16];
@@ -783,7 +1066,8 @@ fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[17 * 2] = subl[17];
     subkey[17 * 2 + 1] = subr[17];
     tl = subl[15] ^ (subr[15] & !subr[17]);
-    dw = tl & subl[17]; tr = subr[15] ^ camellia_rl1!(dw);
+    dw = tl & subl[17];
+    tr = subr[15] ^ camellia_rl1!(dw);
     subkey[18 * 2] = tl ^ subl[19];
     subkey[18 * 2 + 1] = tr ^ subr[19];
     subkey[19 * 2] = subl[18] ^ subl[20];
@@ -795,15 +1079,17 @@ fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[22 * 2] = subl[21] ^ subl[23];
     subkey[22 * 2 + 1] = subr[21] ^ subr[23];
     tl = subl[26] ^ (subr[26] & !subr[24]);
-    dw = tl & subl[24]; tr = subr[26] ^ camellia_rl1!(dw);
+    dw = tl & subl[24];
+    tr = subr[26] ^ camellia_rl1!(dw);
     subkey[23 * 2] = subl[22] ^ tl;
     subkey[23 * 2 + 1] = subr[22] ^ tr;
     subkey[24 * 2] = subl[24];
     subkey[24 * 2 + 1] = subr[24];
     subkey[25 * 2] = subl[25];
     subkey[25 * 2 + 1] = subr[25];
-    tl = subl[23] ^ (subr[23] &  !subr[25]);
-    dw = tl & subl[25]; tr = subr[23] ^ camellia_rl1!(dw);
+    tl = subl[23] ^ (subr[23] & !subr[25]);
+    dw = tl & subl[25];
+    tr = subr[23] ^ camellia_rl1!(dw);
     subkey[26 * 2] = tl ^ subl[27];
     subkey[26 * 2 + 1] = tr ^ subr[27];
     subkey[27 * 2] = subl[26] ^ subl[28];
@@ -820,54 +1106,102 @@ fn camellia_setup256(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     subkey[32 * 2 + 1] = subr[32] ^ subr[31];
 
     // apply the inverse of the last half of P-function
-    dw = subkey[2 * 2] ^ subkey[2 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[2 * 2 + 1] = subkey[2 * 2] ^ dw; subkey[2 * 2] = dw;
-    dw = subkey[3 * 2] ^ subkey[3 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[3 * 2 + 1] = subkey[3 * 2] ^ dw; subkey[3 * 2] = dw;
-    dw = subkey[4 * 2] ^ subkey[4 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[4 * 2 + 1] = subkey[4 * 2] ^ dw; subkey[4 * 2] = dw;
-    dw = subkey[5 * 2] ^ subkey[5 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[5 * 2 + 1] = subkey[5 * 2] ^ dw; subkey[5 * 2] = dw;
-    dw = subkey[6 * 2] ^ subkey[6 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[6 * 2 + 1] = subkey[6 * 2] ^ dw; subkey[6 * 2] = dw;
-    dw = subkey[7 * 2] ^ subkey[7 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[7 * 2 + 1] = subkey[7 * 2] ^ dw; subkey[7 * 2] = dw;
-    dw = subkey[10 * 2] ^ subkey[10 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[10 * 2 + 1] = subkey[10 * 2] ^ dw; subkey[10 * 2] = dw;
-    dw = subkey[11 * 2] ^ subkey[11 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[11 * 2 + 1] = subkey[11 * 2] ^ dw; subkey[11 * 2] = dw;
-    dw = subkey[12 * 2] ^ subkey[12 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[12 * 2 + 1] = subkey[12 * 2] ^ dw; subkey[12 * 2] = dw;
-    dw = subkey[13 * 2] ^ subkey[13 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[13 * 2 + 1] = subkey[13 * 2] ^ dw; subkey[13 * 2] = dw;
-    dw = subkey[14 * 2] ^ subkey[14 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[14 * 2 + 1] = subkey[14 * 2] ^ dw; subkey[14 * 2] = dw;
-    dw = subkey[15 * 2] ^ subkey[15 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[15 * 2 + 1] = subkey[15 * 2] ^ dw; subkey[15 * 2] = dw;
-    dw = subkey[18 * 2] ^ subkey[18 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[18 * 2 + 1] = subkey[18 * 2] ^ dw; subkey[18 * 2] = dw;
-    dw = subkey[19 * 2] ^ subkey[19 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[19 * 2 + 1] = subkey[19 * 2] ^ dw; subkey[19 * 2] = dw;
-    dw = subkey[20 * 2] ^ subkey[20 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[20 * 2 + 1] = subkey[20 * 2] ^ dw; subkey[20 * 2] = dw;
-    dw = subkey[21 * 2] ^ subkey[21 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[21 * 2 + 1] = subkey[21 * 2] ^ dw; subkey[21 * 2] = dw;
-    dw = subkey[22 * 2] ^ subkey[22 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[22 * 2 + 1] = subkey[22 * 2] ^ dw; subkey[22 * 2] = dw;
-    dw = subkey[23 * 2] ^ subkey[23 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[23 * 2 + 1] = subkey[23 * 2] ^ dw; subkey[23 * 2] = dw;
-    dw = subkey[26 * 2] ^ subkey[26 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[26 * 2 + 1] = subkey[26 * 2] ^ dw; subkey[26 * 2] = dw;
-    dw = subkey[27 * 2] ^ subkey[27 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[27 * 2 + 1] = subkey[27 * 2] ^ dw; subkey[27 * 2] = dw;
-    dw = subkey[28 * 2] ^ subkey[28 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[28 * 2 + 1] = subkey[28 * 2] ^ dw; subkey[28 * 2] = dw;
-    dw = subkey[29 * 2] ^ subkey[29 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[29 * 2 + 1] = subkey[29 * 2] ^ dw; subkey[29 * 2] = dw;
-    dw = subkey[30 * 2] ^ subkey[30 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[30 * 2 + 1] = subkey[30 * 2] ^ dw; subkey[30 * 2] = dw;
-    dw = subkey[31 * 2] ^ subkey[31 * 2 + 1]; dw = camellia_rl8!(dw);
-    subkey[31 * 2 + 1] = subkey[31 * 2] ^ dw; subkey[31 * 2] = dw;
+    dw = subkey[2 * 2] ^ subkey[2 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[2 * 2 + 1] = subkey[2 * 2] ^ dw;
+    subkey[2 * 2] = dw;
+    dw = subkey[3 * 2] ^ subkey[3 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[3 * 2 + 1] = subkey[3 * 2] ^ dw;
+    subkey[3 * 2] = dw;
+    dw = subkey[4 * 2] ^ subkey[4 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[4 * 2 + 1] = subkey[4 * 2] ^ dw;
+    subkey[4 * 2] = dw;
+    dw = subkey[5 * 2] ^ subkey[5 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[5 * 2 + 1] = subkey[5 * 2] ^ dw;
+    subkey[5 * 2] = dw;
+    dw = subkey[6 * 2] ^ subkey[6 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[6 * 2 + 1] = subkey[6 * 2] ^ dw;
+    subkey[6 * 2] = dw;
+    dw = subkey[7 * 2] ^ subkey[7 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[7 * 2 + 1] = subkey[7 * 2] ^ dw;
+    subkey[7 * 2] = dw;
+    dw = subkey[10 * 2] ^ subkey[10 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[10 * 2 + 1] = subkey[10 * 2] ^ dw;
+    subkey[10 * 2] = dw;
+    dw = subkey[11 * 2] ^ subkey[11 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[11 * 2 + 1] = subkey[11 * 2] ^ dw;
+    subkey[11 * 2] = dw;
+    dw = subkey[12 * 2] ^ subkey[12 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[12 * 2 + 1] = subkey[12 * 2] ^ dw;
+    subkey[12 * 2] = dw;
+    dw = subkey[13 * 2] ^ subkey[13 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[13 * 2 + 1] = subkey[13 * 2] ^ dw;
+    subkey[13 * 2] = dw;
+    dw = subkey[14 * 2] ^ subkey[14 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[14 * 2 + 1] = subkey[14 * 2] ^ dw;
+    subkey[14 * 2] = dw;
+    dw = subkey[15 * 2] ^ subkey[15 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[15 * 2 + 1] = subkey[15 * 2] ^ dw;
+    subkey[15 * 2] = dw;
+    dw = subkey[18 * 2] ^ subkey[18 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[18 * 2 + 1] = subkey[18 * 2] ^ dw;
+    subkey[18 * 2] = dw;
+    dw = subkey[19 * 2] ^ subkey[19 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[19 * 2 + 1] = subkey[19 * 2] ^ dw;
+    subkey[19 * 2] = dw;
+    dw = subkey[20 * 2] ^ subkey[20 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[20 * 2 + 1] = subkey[20 * 2] ^ dw;
+    subkey[20 * 2] = dw;
+    dw = subkey[21 * 2] ^ subkey[21 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[21 * 2 + 1] = subkey[21 * 2] ^ dw;
+    subkey[21 * 2] = dw;
+    dw = subkey[22 * 2] ^ subkey[22 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[22 * 2 + 1] = subkey[22 * 2] ^ dw;
+    subkey[22 * 2] = dw;
+    dw = subkey[23 * 2] ^ subkey[23 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[23 * 2 + 1] = subkey[23 * 2] ^ dw;
+    subkey[23 * 2] = dw;
+    dw = subkey[26 * 2] ^ subkey[26 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[26 * 2 + 1] = subkey[26 * 2] ^ dw;
+    subkey[26 * 2] = dw;
+    dw = subkey[27 * 2] ^ subkey[27 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[27 * 2 + 1] = subkey[27 * 2] ^ dw;
+    subkey[27 * 2] = dw;
+    dw = subkey[28 * 2] ^ subkey[28 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[28 * 2 + 1] = subkey[28 * 2] ^ dw;
+    subkey[28 * 2] = dw;
+    dw = subkey[29 * 2] ^ subkey[29 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[29 * 2 + 1] = subkey[29 * 2] ^ dw;
+    subkey[29 * 2] = dw;
+    dw = subkey[30 * 2] ^ subkey[30 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[30 * 2 + 1] = subkey[30 * 2] ^ dw;
+    subkey[30 * 2] = dw;
+    dw = subkey[31 * 2] ^ subkey[31 * 2 + 1];
+    dw = camellia_rl8!(dw);
+    subkey[31 * 2 + 1] = subkey[31 * 2] ^ dw;
+    subkey[31 * 2] = dw;
 }
 
 fn camellia_setup192(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
@@ -893,7 +1227,6 @@ fn camellia_setup192(key: &[u8], subkey: &mut [u32; KEY_TABLE_LEN]) {
     camellia_setup256(&kk, subkey);
 }
 
-
 // Stuff related to camellia encryption/decryption
 fn camellia_encrypt128(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
     debug_assert_eq!(block.len(), BLOCK_LEN); // 16 bytes
@@ -905,9 +1238,9 @@ fn camellia_encrypt128(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
 
     // big-endian data
     let mut data = [
-        u32::from_be_bytes([block[ 0], block[ 1], block[ 2], block[ 3]]),
-        u32::from_be_bytes([block[ 4], block[ 5], block[ 6], block[ 7]]),
-        u32::from_be_bytes([block[ 8], block[ 9], block[10], block[11]]),
+        u32::from_be_bytes([block[0], block[1], block[2], block[3]]),
+        u32::from_be_bytes([block[4], block[5], block[6], block[7]]),
+        u32::from_be_bytes([block[8], block[9], block[10], block[11]]),
         u32::from_be_bytes([block[12], block[13], block[14], block[15]]),
     ];
 
@@ -916,72 +1249,254 @@ fn camellia_encrypt128(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
     data[1] ^= subkey[0 * 2 + 1];
 
     // main iteration
-    camellia_roundsm!(data[0],data[1],
-             subkey[2 * 2],subkey[2 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[3 * 2],subkey[3 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[4 * 2],subkey[4 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[5 * 2],subkey[5 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[6 * 2],subkey[6 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[7 * 2],subkey[7 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[2 * 2],
+        subkey[2 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[3 * 2],
+        subkey[3 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[4 * 2],
+        subkey[4 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[5 * 2],
+        subkey[5 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[6 * 2],
+        subkey[6 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[7 * 2],
+        subkey[7 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[8 * 2],subkey[8 * 2 + 1],
-         subkey[9 * 2],subkey[9 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[8 * 2],
+        subkey[8 * 2 + 1],
+        subkey[9 * 2],
+        subkey[9 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0], data[1],
-             subkey[10 * 2], subkey[10 * 2 + 1],
-             data[2],data[3], il, ir, t0, t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[11 * 2],subkey[11 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[12 * 2],subkey[12 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[13 * 2],subkey[13 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[14 * 2],subkey[14 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[15 * 2],subkey[15 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[10 * 2],
+        subkey[10 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[11 * 2],
+        subkey[11 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[12 * 2],
+        subkey[12 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[13 * 2],
+        subkey[13 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[14 * 2],
+        subkey[14 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[15 * 2],
+        subkey[15 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[16 * 2],subkey[16 * 2 + 1],
-         subkey[17 * 2],subkey[17 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[16 * 2],
+        subkey[16 * 2 + 1],
+        subkey[17 * 2],
+        subkey[17 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[18 * 2],subkey[18 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[19 * 2],subkey[19 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[20 * 2],subkey[20 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[21 * 2],subkey[21 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[22 * 2],subkey[22 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[23 * 2],subkey[23 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[18 * 2],
+        subkey[18 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[19 * 2],
+        subkey[19 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[20 * 2],
+        subkey[20 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[21 * 2],
+        subkey[21 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[22 * 2],
+        subkey[22 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[23 * 2],
+        subkey[23 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
     // post whitening but kw4
     data[2] ^= subkey[24 * 2];
@@ -994,9 +1509,9 @@ fn camellia_encrypt128(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
     data[2] = t0;
     data[3] = t1;
 
-    block[ 0.. 4].copy_from_slice(&data[0].to_be_bytes());
-    block[ 4.. 8].copy_from_slice(&data[1].to_be_bytes());
-    block[ 8..12].copy_from_slice(&data[2].to_be_bytes());
+    block[0..4].copy_from_slice(&data[0].to_be_bytes());
+    block[4..8].copy_from_slice(&data[1].to_be_bytes());
+    block[8..12].copy_from_slice(&data[2].to_be_bytes());
     block[12..16].copy_from_slice(&data[3].to_be_bytes());
 }
 
@@ -1011,9 +1526,9 @@ fn camellia_decrypt128(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
 
     // big-endian data
     let mut data = [
-        u32::from_be_bytes([block[ 0], block[ 1], block[ 2], block[ 3]]),
-        u32::from_be_bytes([block[ 4], block[ 5], block[ 6], block[ 7]]),
-        u32::from_be_bytes([block[ 8], block[ 9], block[10], block[11]]),
+        u32::from_be_bytes([block[0], block[1], block[2], block[3]]),
+        u32::from_be_bytes([block[4], block[5], block[6], block[7]]),
+        u32::from_be_bytes([block[8], block[9], block[10], block[11]]),
         u32::from_be_bytes([block[12], block[13], block[14], block[15]]),
     ];
 
@@ -1022,72 +1537,254 @@ fn camellia_decrypt128(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
     data[1] ^= subkey[24 * 2 + 1];
 
     // main iteration
-    camellia_roundsm!(data[0],data[1],
-             subkey[23 * 2],subkey[23 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[22 * 2],subkey[22 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[21 * 2],subkey[21 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[20 * 2],subkey[20 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[19 * 2],subkey[19 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[18 * 2],subkey[18 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[23 * 2],
+        subkey[23 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[22 * 2],
+        subkey[22 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[21 * 2],
+        subkey[21 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[20 * 2],
+        subkey[20 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[19 * 2],
+        subkey[19 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[18 * 2],
+        subkey[18 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[17 * 2],subkey[17 * 2 + 1],
-         subkey[16 * 2],subkey[16 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[17 * 2],
+        subkey[17 * 2 + 1],
+        subkey[16 * 2],
+        subkey[16 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[15 * 2],subkey[15 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[14 * 2],subkey[14 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[13 * 2],subkey[13 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[12 * 2],subkey[12 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[11 * 2],subkey[11 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[10 * 2],subkey[10 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[15 * 2],
+        subkey[15 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[14 * 2],
+        subkey[14 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[13 * 2],
+        subkey[13 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[12 * 2],
+        subkey[12 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[11 * 2],
+        subkey[11 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[10 * 2],
+        subkey[10 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[9 * 2],subkey[9 * 2 + 1],
-         subkey[8 * 2],subkey[8 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[9 * 2],
+        subkey[9 * 2 + 1],
+        subkey[8 * 2],
+        subkey[8 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[7 * 2],subkey[7 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[6 * 2],subkey[6 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[5 * 2],subkey[5 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[4 * 2],subkey[4 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[3 * 2],subkey[3 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[2 * 2],subkey[2 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[7 * 2],
+        subkey[7 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[6 * 2],
+        subkey[6 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[5 * 2],
+        subkey[5 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[4 * 2],
+        subkey[4 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[3 * 2],
+        subkey[3 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[2 * 2],
+        subkey[2 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
     // post whitening but kw4
     data[2] ^= subkey[0 * 2];
@@ -1100,13 +1797,11 @@ fn camellia_decrypt128(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
     data[2] = t0;
     data[3] = t1;
 
-    block[ 0.. 4].copy_from_slice(&data[0].to_be_bytes());
-    block[ 4.. 8].copy_from_slice(&data[1].to_be_bytes());
-    block[ 8..12].copy_from_slice(&data[2].to_be_bytes());
+    block[0..4].copy_from_slice(&data[0].to_be_bytes());
+    block[4..8].copy_from_slice(&data[1].to_be_bytes());
+    block[8..12].copy_from_slice(&data[2].to_be_bytes());
     block[12..16].copy_from_slice(&data[3].to_be_bytes());
 }
-
-
 
 // stuff for 192 and 256bit encryption/decryption
 
@@ -1121,9 +1816,9 @@ fn camellia_encrypt256(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
 
     // big-endian data
     let mut data = [
-        u32::from_be_bytes([block[ 0], block[ 1], block[ 2], block[ 3]]),
-        u32::from_be_bytes([block[ 4], block[ 5], block[ 6], block[ 7]]),
-        u32::from_be_bytes([block[ 8], block[ 9], block[10], block[11]]),
+        u32::from_be_bytes([block[0], block[1], block[2], block[3]]),
+        u32::from_be_bytes([block[4], block[5], block[6], block[7]]),
+        u32::from_be_bytes([block[8], block[9], block[10], block[11]]),
         u32::from_be_bytes([block[12], block[13], block[14], block[15]]),
     ];
 
@@ -1132,96 +1827,342 @@ fn camellia_encrypt256(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
     data[1] ^= subkey[0 * 2 + 1];
 
     // main iteration
-    camellia_roundsm!(data[0],data[1],
-             subkey[2 * 2],subkey[2 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[3 * 2],subkey[3 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[4 * 2],subkey[4 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[5 * 2],subkey[5 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[6 * 2],subkey[6 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[7 * 2],subkey[7 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[2 * 2],
+        subkey[2 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[3 * 2],
+        subkey[3 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[4 * 2],
+        subkey[4 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[5 * 2],
+        subkey[5 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[6 * 2],
+        subkey[6 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[7 * 2],
+        subkey[7 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[8 * 2],subkey[8 * 2 + 1],
-         subkey[9 * 2],subkey[9 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[8 * 2],
+        subkey[8 * 2 + 1],
+        subkey[9 * 2],
+        subkey[9 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[10 * 2],subkey[10 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[11 * 2],subkey[11 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[12 * 2],subkey[12 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[13 * 2],subkey[13 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[14 * 2],subkey[14 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[15 * 2],subkey[15 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[10 * 2],
+        subkey[10 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[11 * 2],
+        subkey[11 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[12 * 2],
+        subkey[12 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[13 * 2],
+        subkey[13 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[14 * 2],
+        subkey[14 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[15 * 2],
+        subkey[15 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[16 * 2],subkey[16 * 2 + 1],
-         subkey[17 * 2],subkey[17 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[16 * 2],
+        subkey[16 * 2 + 1],
+        subkey[17 * 2],
+        subkey[17 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[18 * 2],subkey[18 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[19 * 2],subkey[19 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[20 * 2],subkey[20 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[21 * 2],subkey[21 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[22 * 2],subkey[22 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[23 * 2],subkey[23 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[18 * 2],
+        subkey[18 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[19 * 2],
+        subkey[19 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[20 * 2],
+        subkey[20 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[21 * 2],
+        subkey[21 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[22 * 2],
+        subkey[22 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[23 * 2],
+        subkey[23 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[24 * 2],subkey[24 * 2 + 1],
-         subkey[25 * 2],subkey[25 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[24 * 2],
+        subkey[24 * 2 + 1],
+        subkey[25 * 2],
+        subkey[25 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[26 * 2],subkey[26 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[27 * 2],subkey[27 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[28 * 2],subkey[28 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[29 * 2],subkey[29 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[30 * 2],subkey[30 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[31 * 2],subkey[31 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[26 * 2],
+        subkey[26 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[27 * 2],
+        subkey[27 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[28 * 2],
+        subkey[28 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[29 * 2],
+        subkey[29 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[30 * 2],
+        subkey[30 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[31 * 2],
+        subkey[31 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
     // post whitening but kw4
     data[2] ^= subkey[32 * 2];
@@ -1234,9 +2175,9 @@ fn camellia_encrypt256(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
     data[2] = t0;
     data[3] = t1;
 
-    block[ 0.. 4].copy_from_slice(&data[0].to_be_bytes());
-    block[ 4.. 8].copy_from_slice(&data[1].to_be_bytes());
-    block[ 8..12].copy_from_slice(&data[2].to_be_bytes());
+    block[0..4].copy_from_slice(&data[0].to_be_bytes());
+    block[4..8].copy_from_slice(&data[1].to_be_bytes());
+    block[8..12].copy_from_slice(&data[2].to_be_bytes());
     block[12..16].copy_from_slice(&data[3].to_be_bytes());
 }
 
@@ -1251,108 +2192,353 @@ fn camellia_decrypt256(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
 
     // big-endian data
     let mut data = [
-        u32::from_be_bytes([block[ 0], block[ 1], block[ 2], block[ 3]]),
-        u32::from_be_bytes([block[ 4], block[ 5], block[ 6], block[ 7]]),
-        u32::from_be_bytes([block[ 8], block[ 9], block[10], block[11]]),
+        u32::from_be_bytes([block[0], block[1], block[2], block[3]]),
+        u32::from_be_bytes([block[4], block[5], block[6], block[7]]),
+        u32::from_be_bytes([block[8], block[9], block[10], block[11]]),
         u32::from_be_bytes([block[12], block[13], block[14], block[15]]),
     ];
-
 
     // pre whitening but absorb kw2
     data[0] ^= subkey[32 * 2];
     data[1] ^= subkey[32 * 2 + 1];
-    
+
     // main iteration
-    camellia_roundsm!(data[0],data[1],
-             subkey[31 * 2],subkey[31 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[30 * 2],subkey[30 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[29 * 2],subkey[29 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[28 * 2],subkey[28 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[27 * 2],subkey[27 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[26 * 2],subkey[26 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[31 * 2],
+        subkey[31 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[30 * 2],
+        subkey[30 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[29 * 2],
+        subkey[29 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[28 * 2],
+        subkey[28 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[27 * 2],
+        subkey[27 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[26 * 2],
+        subkey[26 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[25 * 2],subkey[25 * 2 + 1],
-         subkey[24 * 2],subkey[24 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[25 * 2],
+        subkey[25 * 2 + 1],
+        subkey[24 * 2],
+        subkey[24 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[23 * 2],subkey[23 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[22 * 2],subkey[22 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[21 * 2],subkey[21 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[20 * 2],subkey[20 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[19 * 2],subkey[19 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[18 * 2],subkey[18 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[23 * 2],
+        subkey[23 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[22 * 2],
+        subkey[22 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[21 * 2],
+        subkey[21 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[20 * 2],
+        subkey[20 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[19 * 2],
+        subkey[19 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[18 * 2],
+        subkey[18 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[17 * 2],subkey[17 * 2 + 1],
-         subkey[16 * 2],subkey[16 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[17 * 2],
+        subkey[17 * 2 + 1],
+        subkey[16 * 2],
+        subkey[16 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[15 * 2],subkey[15 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[14 * 2],subkey[14 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[13 * 2],subkey[13 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[12 * 2],subkey[12 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[11 * 2],subkey[11 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[10 * 2],subkey[10 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[15 * 2],
+        subkey[15 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[14 * 2],
+        subkey[14 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[13 * 2],
+        subkey[13 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[12 * 2],
+        subkey[12 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[11 * 2],
+        subkey[11 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[10 * 2],
+        subkey[10 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
-    camellia_fls!(data[0],data[1],data[2],data[3],
-         subkey[9 * 2],subkey[9 * 2 + 1],
-         subkey[8 * 2],subkey[8 * 2 + 1],
-         t0,t1,il,ir);
+    camellia_fls!(
+        data[0],
+        data[1],
+        data[2],
+        data[3],
+        subkey[9 * 2],
+        subkey[9 * 2 + 1],
+        subkey[8 * 2],
+        subkey[8 * 2 + 1],
+        t0,
+        t1,
+        il,
+        ir
+    );
 
-    camellia_roundsm!(data[0],data[1],
-             subkey[7 * 2],subkey[7 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[6 * 2],subkey[6 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[5 * 2],subkey[5 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[4 * 2],subkey[4 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
-    camellia_roundsm!(data[0],data[1],
-             subkey[3 * 2],subkey[3 * 2 + 1],
-             data[2],data[3],il,ir,t0,t1);
-    camellia_roundsm!(data[2],data[3],
-             subkey[2 * 2],subkey[2 * 2 + 1],
-             data[0],data[1],il,ir,t0,t1);
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[7 * 2],
+        subkey[7 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[6 * 2],
+        subkey[6 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[5 * 2],
+        subkey[5 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[4 * 2],
+        subkey[4 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[0],
+        data[1],
+        subkey[3 * 2],
+        subkey[3 * 2 + 1],
+        data[2],
+        data[3],
+        il,
+        ir,
+        t0,
+        t1
+    );
+    camellia_roundsm!(
+        data[2],
+        data[3],
+        subkey[2 * 2],
+        subkey[2 * 2 + 1],
+        data[0],
+        data[1],
+        il,
+        ir,
+        t0,
+        t1
+    );
 
     // post whitening but kw4
     data[2] ^= subkey[0 * 2];
@@ -1365,32 +2551,30 @@ fn camellia_decrypt256(subkey: &[u32; KEY_TABLE_LEN], block: &mut [u8]) {
     data[2] = t0;
     data[3] = t1;
 
-    block[ 0.. 4].copy_from_slice(&data[0].to_be_bytes());
-    block[ 4.. 8].copy_from_slice(&data[1].to_be_bytes());
-    block[ 8..12].copy_from_slice(&data[2].to_be_bytes());
+    block[0..4].copy_from_slice(&data[0].to_be_bytes());
+    block[4..8].copy_from_slice(&data[1].to_be_bytes());
+    block[8..12].copy_from_slice(&data[2].to_be_bytes());
     block[12..16].copy_from_slice(&data[3].to_be_bytes());
 }
-
-
 
 #[test]
 fn test_camellia() {
     // Page-22: B Test Data
     // https://info.isl.ntt.co.jp/crypt/eng/camellia/dl/01espec.pdf
-    
+
     // ================== 128-bit key =================
     let key = [
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 
-        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32,
+        0x10,
     ];
     let mut subkey = [0u32; KEY_TABLE_LEN];
     let plaintext = [
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 
-        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32,
+        0x10,
     ];
     let ciphertext = [
-        0x67, 0x67, 0x31, 0x38, 0x54, 0x96, 0x69, 0x73, 
-        0x08, 0x57, 0x06, 0x56, 0x48, 0xea, 0xbe, 0x43,
+        0x67, 0x67, 0x31, 0x38, 0x54, 0x96, 0x69, 0x73, 0x08, 0x57, 0x06, 0x56, 0x48, 0xea, 0xbe,
+        0x43,
     ];
     camellia_setup128(&key, &mut subkey);
 
@@ -1401,20 +2585,18 @@ fn test_camellia() {
     camellia_decrypt128(&subkey, &mut block);
     assert_eq!(&block[..], &plaintext[..]);
 
-
     // ================== 192-bit key =================
     let key = [
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 
-        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10, 
-        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32,
+        0x10, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
     ];
     let plaintext = [
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 
-        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32,
+        0x10,
     ];
     let ciphertext = [
-        0xb4, 0x99, 0x34, 0x01, 0xb3, 0xe9, 0x96, 0xf8, 
-        0x4e, 0xe5, 0xce, 0xe7, 0xd7, 0x9b, 0x09, 0xb9,
+        0xb4, 0x99, 0x34, 0x01, 0xb3, 0xe9, 0x96, 0xf8, 0x4e, 0xe5, 0xce, 0xe7, 0xd7, 0x9b, 0x09,
+        0xb9,
     ];
     camellia_setup192(&key, &mut subkey);
 
@@ -1425,21 +2607,19 @@ fn test_camellia() {
     camellia_decrypt256(&subkey, &mut block);
     assert_eq!(&block[..], &plaintext[..]);
 
-
     // ================== 256-bit key =================
     let key = [
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 
-        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10, 
-        0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 
-        0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32,
+        0x10, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd,
+        0xee, 0xff,
     ];
     let plaintext = [
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 
-        0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32,
+        0x10,
     ];
     let ciphertext = [
-        0x9a, 0xcc, 0x23, 0x7d, 0xff, 0x16, 0xd7, 0x6c, 
-        0x20, 0xef, 0x7c, 0x91, 0x9e, 0x3a, 0x75, 0x09,
+        0x9a, 0xcc, 0x23, 0x7d, 0xff, 0x16, 0xd7, 0x6c, 0x20, 0xef, 0x7c, 0x91, 0x9e, 0x3a, 0x75,
+        0x09,
     ];
     camellia_setup256(&key, &mut subkey);
 

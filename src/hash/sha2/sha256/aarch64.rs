@@ -1,6 +1,5 @@
-use super::K32;
 use super::Sha256;
-
+use super::K32;
 
 use core::arch::aarch64::*;
 
@@ -18,7 +17,7 @@ unsafe fn transform_simd(state: &mut [u32; 8], block: &[u8]) {
 
     // vld1q_u32
     fn uint32x4_t_new(a: u32, b: u32, c: u32, d: u32) -> uint32x4_t {
-        let array = [ a, b, c, d ];
+        let array = [a, b, c, d];
         union U {
             array: [u32; 4],
             vec: uint32x4_t,
@@ -27,9 +26,9 @@ unsafe fn transform_simd(state: &mut [u32; 8], block: &[u8]) {
     }
 
     fn uint32x4_t_from_be_bytes(data: &[u8]) -> uint32x4_t {
-        let a = u32::from_be_bytes([data[ 0], data[ 1], data[ 2], data[ 3]]);
-        let b = u32::from_be_bytes([data[ 4], data[ 5], data[ 6], data[ 7]]);
-        let c = u32::from_be_bytes([data[ 8], data[ 9], data[10], data[11]]);
+        let a = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
+        let b = u32::from_be_bytes([data[4], data[5], data[6], data[7]]);
+        let c = u32::from_be_bytes([data[8], data[9], data[10], data[11]]);
         let d = u32::from_be_bytes([data[12], data[13], data[14], data[15]]);
         uint32x4_t_new(a, b, c, d)
     }
@@ -38,12 +37,12 @@ unsafe fn transform_simd(state: &mut [u32; 8], block: &[u8]) {
         // Load state
         let mut state0: uint32x4_t = uint32x4_t_new(state[0], state[1], state[2], state[3]);
         let mut state1: uint32x4_t = uint32x4_t_new(state[4], state[5], state[6], state[7]);
-        
+
         // Save state
         let abef_save: uint32x4_t = state0;
         let cdgh_save: uint32x4_t = state1;
 
-        let mut msg0: uint32x4_t = uint32x4_t_from_be_bytes(&block[ 0..16]);
+        let mut msg0: uint32x4_t = uint32x4_t_from_be_bytes(&block[0..16]);
         let mut msg1: uint32x4_t = uint32x4_t_from_be_bytes(&block[16..32]);
         let mut msg2: uint32x4_t = uint32x4_t_from_be_bytes(&block[32..48]);
         let mut msg3: uint32x4_t = uint32x4_t_from_be_bytes(&block[48..64]);
@@ -176,7 +175,7 @@ unsafe fn transform_simd(state: &mut [u32; 8], block: &[u8]) {
         // Combine state
         state0 = vaddq_u32(state0, abef_save);
         state1 = vaddq_u32(state1, cdgh_save);
-        
+
         // vst1q_u32
         #[inline]
         fn save_state(state: &mut [u32], vec: uint32x4_t) {

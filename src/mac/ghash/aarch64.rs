@@ -2,9 +2,8 @@
 use core::arch::aarch64::*;
 use core::mem::transmute;
 
-
 // 参考: https://github.com/noloader/AES-Intrinsics/blob/master/clmul-arm.c
-// 
+//
 // Convert _mm_clmulepi64_si128 to vmull_{high}_p64
 // https://stackoverflow.com/questions/38553881/convert-mm-clmulepi64-si128-to-vmull-high-p64
 
@@ -30,14 +29,13 @@ unsafe fn vrbitq_u8(a: uint8x16_t) -> uint8x16_t {
 
     // rbit v0.16b, v0.16b
     llvm_asm!("rbit v0.16b, v0.16b"
-        : "=w" (result)
-        : "w"(a)
-        :
-        );
+    : "=w" (result)
+    : "w"(a)
+    :
+    );
 
     result
 }
-
 
 // Perform the multiplication and reduction in GF(2^128)
 #[target_feature(enable = "pmull")]
@@ -84,22 +82,21 @@ pub struct GHash {
 }
 
 impl GHash {
-    pub const KEY_LEN: usize   = 16;
+    pub const KEY_LEN: usize = 16;
     pub const BLOCK_LEN: usize = 16;
-    pub const TAG_LEN: usize   = 16;
-    
+    pub const TAG_LEN: usize = 16;
 
     pub fn new(h: &[u8; Self::KEY_LEN]) -> Self {
         unsafe {
             let key: uint8x16_t = transmute(h.clone());
-            
+
             Self {
                 key: vrbitq_u8(key),
                 tag: vdupq_n_u8(0),
             }
         }
     }
-    
+
     pub fn update(&mut self, m: &[u8]) {
         let mlen = m.len();
         if mlen == 0 {
@@ -131,8 +128,6 @@ impl GHash {
     }
 
     pub fn finalize(self) -> [u8; Self::TAG_LEN] {
-        unsafe {
-            transmute(vrbitq_u8(self.tag))
-        }
+        unsafe { transmute(vrbitq_u8(self.tag)) }
     }
 }
