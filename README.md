@@ -1,5 +1,9 @@
 # Rust Crypto
 
+[![License](https://img.shields.io/github/license/shadowsocks/crypto2.svg)](https://github.com/shadowsocks/crypto2)
+[![Build & Test](https://github.com/shadowsocks/crypto2/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/shadowsocks/crypto2/actions/workflows/rust.yml)
+[![crates.io](https://img.shields.io/crates/v/crypto2.svg)](https://crates.io/crates/crypto2)
+
 An all-in-one cryptographic algorithm library in Rust.
 
 ## Supported Details
