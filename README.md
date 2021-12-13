@@ -45,9 +45,9 @@ An all-in-one cryptographic algorithm library in Rust.
 - 🚧 SHA3-384
 - 🚧 SHA3-512
 - ✅ SM3
-- ❌ BLAKE2b
-- ❌ BLAKE2s
-- ❌ BLAKE3
+- ✅ BLAKE2b
+- ✅ BLAKE2s
+- ✅ BLAKE3
 - ❌ RIPEMD
 - ❌ Whirlpool
 - 🚧 GOST
