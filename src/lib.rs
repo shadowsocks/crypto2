@@ -1,5 +1,5 @@
 #![cfg_attr(test, feature(test))]
-#![feature(stdsimd, llvm_asm)]
+#![feature(stdsimd)]
 #![allow(unused_macros, unused_assignments)]
 
 #[cfg(test)]
