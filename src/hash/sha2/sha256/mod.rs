@@ -43,7 +43,7 @@ cfg_if! {
                 mod generic;
 
                 fn transform(state: &mut [u32; 8], block: &[u8]) {
-                    if std::is_aarch64_feature_detected("sha2") {
+                    if std::is_aarch64_feature_detected!("sha2") {
                         aarch64::transform(state, block)
                     } else {
                         generic::transform(state, block)
