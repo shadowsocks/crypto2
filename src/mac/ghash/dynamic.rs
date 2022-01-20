@@ -20,7 +20,7 @@ impl GHash {
 
         #[cfg(target_arch = "aarch64")]
         if std::is_aarch64_feature_detected!("pmull") {
-            return GHash::Platform(platform::GHash::new(k));
+            return GHash::Platform(platform::GHash::new(h));
         }
 
         GHash::Generic(generic::GHash::new(h))
