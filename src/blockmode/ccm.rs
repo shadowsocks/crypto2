@@ -28,10 +28,7 @@ macro_rules! impl_block_cipher_with_ccm_mode {
             pub const NONCE_LEN: usize = $nlen;
             pub const TAG_LEN: usize = $tlen;
 
-            #[cfg(target_pointer_width = "64")]
-            pub const A_MAX: usize = usize::MAX; // 2^64 - 1
-            #[cfg(target_pointer_width = "32")]
-            pub const A_MAX: usize = usize::MAX; // 2^32 - 1
+            pub const A_MAX: usize = usize::MAX;
 
             pub const P_MAX: usize = 16777215; // 2^24 - 1
             pub const C_MAX: usize = Self::P_MAX + Self::TAG_LEN; // 2^24 + 15
