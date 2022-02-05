@@ -50,6 +50,7 @@ const BLAKE2S_256_IV: [u32; 8] = [
 #[cfg(all(
     any(target_arch = "x86", target_arch = "x86_64"),
     target_feature = "sse2",
+    not(feature = "force-soft")
 ))]
 #[path = "./x86/mod.rs"]
 mod platform;
@@ -58,13 +59,16 @@ mod platform;
 // #[path = "./aarch64.rs"]
 // mod platform;
 
-#[cfg(not(any(
-    all(
-        any(target_arch = "x86", target_arch = "x86_64"),
-        target_feature = "sse2",
-    ),
-    all(target_arch = "aarch64", target_feature = "crypto")
-)))]
+#[cfg(any(
+    not(any(
+        all(
+            any(target_arch = "x86", target_arch = "x86_64"),
+            target_feature = "sse2",
+        ),
+        all(target_arch = "aarch64", target_feature = "crypto")
+    )),
+    feature = "force-soft"
+))]
 #[path = "./generic.rs"]
 mod platform;
 

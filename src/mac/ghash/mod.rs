@@ -3,7 +3,7 @@
 use cfg_if::cfg_if;
 
 cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+    if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "force-soft")))] {
         #[path = "./x86.rs"]
         mod platform;
 
@@ -17,7 +17,7 @@ cfg_if! {
                 pub use self::dynamic::GHash;
             }
         }
-    } else if #[cfg(target_arch = "aarch64")] {
+    } else if #[cfg(all(target_arch = "aarch64", not(feature = "force-soft")))] {
         #[path = "./aarch64.rs"]
         mod platform;
 

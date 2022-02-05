@@ -7,7 +7,7 @@ use core::convert::TryFrom;
 // NOTE:
 //      1. AArch64 架构在 ARMv8.4-A 版本里面增加了对 SHA2-512 的支持。
 //      2. X86/X86_64 架构的 SHA-NI 目前并不包含 SHA2-512。
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", not(feature = "force-soft")))]
 mod aarch64;
 mod generic;
 
@@ -119,7 +119,7 @@ const SHA384_INITIAL_STATE: [u64; 8] = [
     0x47B5481DBEFA4FA4,
 ];
 
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", not(feature = "force-soft")))]
 #[inline]
 fn transform(state: &mut [u64; 8], block: &[u8]) {
     // Waiting `std_detect` to support AArch64 v8.4-A
@@ -134,7 +134,7 @@ fn transform(state: &mut [u64; 8], block: &[u8]) {
     // }
 }
 
-#[cfg(not(target_arch = "aarch64"))]
+#[cfg(any(not(target_arch = "aarch64"), feature = "force-soft"))]
 #[inline]
 fn transform(state: &mut [u64; 8], block: &[u8]) {
     generic::transform(state, block)

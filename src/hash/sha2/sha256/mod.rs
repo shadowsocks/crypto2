@@ -6,7 +6,7 @@ use cfg_if::cfg_if;
 use core::convert::TryFrom;
 
 cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+    if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "force-soft")))] {
         mod x86;
 
         cfg_if! {
@@ -31,7 +31,7 @@ cfg_if! {
                 }
             }
         }
-    } else if #[cfg(target_arch = "aarch64")] {
+    } else if #[cfg(all(target_arch = "aarch64", not(feature = "force-soft")))] {
         mod aarch64;
 
         cfg_if! {

@@ -25,6 +25,9 @@ default = [
 
 std = []
 openssh = []
+# Disable hardware acceleration.
+# NOTE: aarch64 hardware acceleration requires core::arch to stablize intrinsics functions
+force-soft = []
 
 [package.metadata.docs.rs]
 all-features = true

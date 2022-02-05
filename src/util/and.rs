@@ -1,14 +1,12 @@
-#[cfg(target_arch = "aarch64")]
-use core::arch::aarch64::*;
-#[cfg(target_arch = "x86")]
-use core::arch::x86::*;
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::*;
-
 use cfg_if::cfg_if;
 
 cfg_if! {
-    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+    if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), not(feature = "force-soft")))] {
+        #[cfg(target_arch = "x86")]
+        use core::arch::x86::*;
+        #[cfg(target_arch = "x86_64")]
+        use core::arch::x86_64::*;
+
         #[target_feature(enable = "sse2")]
         unsafe fn and_si128_inplace_sse2(a: &mut [u8], b: &[u8]) {
             let mut c = _mm_loadu_si128(a.as_ptr() as *const __m128i);
@@ -34,7 +32,10 @@ cfg_if! {
                 }
             }
         }
-    } else if #[cfg(target_arch = "aarch64")] {
+    } else if #[cfg(all(target_arch = "aarch64", not(feature = "force-soft")))] {
+        #[cfg(target_arch = "aarch64")]
+        use core::arch::aarch64::*;
+
         pub fn and_si128_inplace(a: &mut [u8], b: &[u8]) {
             unsafe {
                 let c: *mut uint8x16_t = a.as_mut_ptr() as *mut uint8x16_t;
